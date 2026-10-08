@@ -10,3 +10,4 @@ test-results/
 .wrangler/
 dist/
 .dev.vars*
+.vercel/

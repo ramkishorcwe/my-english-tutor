@@ -1999,6 +1999,30 @@ blockquote {
 .auth-card form {
   margin-top: 26px;
 }
+.google-signin {
+  margin-top: 24px;
+  background: #fff;
+  color: #263d2c;
+  border: 1px solid #bac8bb;
+}
+.google-signin:hover {
+  background: #f3f7f0;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 23px;
+  color: #576b57;
+  font-size: 12px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
 .auth-card form .button {
   margin-top: 20px;
 }

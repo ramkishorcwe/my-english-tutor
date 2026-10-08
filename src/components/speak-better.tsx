@@ -1707,13 +1707,40 @@ function ProfileFields({ value: p, onChange }: { value: Profile; onChange: (p: P
 function SignIn() {
   const search = useSearchParams();
   const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'email' | 'google' | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState(
     search.get('error') === 'link'
       ? 'That sign-in link expired or could not be verified. Request a new link and open it in this browser.'
-      : '',
+      : search.get('error') === 'oauth'
+        ? 'Google sign-in was cancelled or could not be completed. Try again, or use an email link.'
+        : search.get('error') === 'auth'
+          ? 'We could not verify your sign-in. Try Google again, or request a new email link in this browser.'
+          : '',
   );
+  async function signInWithGoogle() {
+    setError('');
+    setMessage('');
+    if (!isConfigured()) {
+      setError(
+        'Google sign-in needs Supabase configuration and an enabled Google provider. Follow the setup guide to connect your account.',
+      );
+      return;
+    }
+    setBusy('google');
+    try {
+      const { data, error } = await browserDb().auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+      if (!data.url)
+        throw new Error('Google sign-in could not start. Try again or use an email link.');
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(null);
+    }
+  }
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError('');
@@ -1723,7 +1750,7 @@ function SignIn() {
       );
       return;
     }
-    setBusy(true);
+    setBusy('email');
     try {
       const { error } = await browserDb().auth.signInWithOtp({
         email,
@@ -1736,7 +1763,7 @@ function SignIn() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
   return (
@@ -1757,7 +1784,36 @@ function SignIn() {
       <section className="auth-card">
         <IconBox icon={MessagesSquare} />
         <h2>Make room for your voice.</h2>
-        <p>Sign in or create an account with a secure email link. No password to remember.</p>
+        <p>Continue with Google or a secure email link. No password to remember.</p>
+        <button
+          type="button"
+          className="button google-signin full-width"
+          disabled={busy !== null}
+          onClick={signInWithGoogle}
+        >
+          <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <path
+              fill="#4285F4"
+              d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.2h6.7c3.9-3.6 6-8.8 6-15.1Z"
+            />
+            <path
+              fill="#34A853"
+              d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.7-5.2c-1.8 1.2-4.1 2-6.8 2-5.3 0-9.8-3.6-11.4-8.4H5.7v5.4A20.4 20.4 0 0 0 24 44Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M12.6 27.5a12.2 12.2 0 0 1 0-7V15H5.7a20.5 20.5 0 0 0 0 18l6.9-5.5Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M24 12.1c3 0 5.6 1 7.7 3l5.8-5.8A19.6 19.6 0 0 0 24 4 20.4 20.4 0 0 0 5.7 15l6.9 5.5C14.2 15.7 18.7 12.1 24 12.1Z"
+            />
+          </svg>
+          {busy === 'google' ? 'Opening Google…' : 'Continue with Google'}
+        </button>
+        <div className="auth-divider">
+          <span>or use email</span>
+        </div>
         <form onSubmit={submit}>
           <label>
             Your email address
@@ -1770,8 +1826,8 @@ function SignIn() {
               autoComplete="email"
             />
           </label>
-          <button className="button primary full-width" disabled={busy}>
-            {busy ? 'Sending your link…' : 'Send me a sign-in link'}
+          <button className="button primary full-width" disabled={busy !== null}>
+            {busy === 'email' ? 'Sending your link…' : 'Send me a sign-in link'}
             <ArrowRight size={18} />
           </button>
         </form>

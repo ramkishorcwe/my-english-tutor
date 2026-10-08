@@ -1,0 +1,12 @@
+.git
+node_modules
+.next
+.open-next
+.openai
+.wrangler
+.tmp
+dist
+test-results
+playwright-report
+.env*
+*.tsbuildinfo

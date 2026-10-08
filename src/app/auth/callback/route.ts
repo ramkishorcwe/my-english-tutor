@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverDb } from '@/lib/supabase/server';
 export async function GET(request: NextRequest) {
+  if (request.nextUrl.searchParams.has('error')) {
+    return NextResponse.redirect(new URL('/signin?error=oauth', request.url));
+  }
   const code = request.nextUrl.searchParams.get('code');
   try {
     if (code) {
@@ -21,5 +24,5 @@ export async function GET(request: NextRequest) {
   } catch {
     /* Return to the recovery flow without logging auth codes or tokens. */
   }
-  return NextResponse.redirect(new URL('/signin?error=link', request.url));
+  return NextResponse.redirect(new URL('/signin?error=auth', request.url));
 }

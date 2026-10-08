@@ -23,6 +23,8 @@ On PowerShell, use `Copy-Item .env.example .env.local`. Open <http://127.0.0.1:3
 4. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the **server-only** `SUPABASE_SERVICE_ROLE_KEY`. Never expose the service role as a `NEXT_PUBLIC_` variable.
 5. Configure production SMTP and Supabase Auth rate limits before opening public registration. The app relies on Supabase's sign-in abuse protection.
 
+Google sign-in is also supported through Supabase's PKCE flow and the same `/auth/callback` route. Enable the Google provider in Supabase, create a Web OAuth client in Google Cloud, and store its Client ID and Client Secret in Supabase's provider settings. Add the Supabase callback URL to Google's authorized redirect URIs and the app's `/auth/callback` URL to Supabase's redirect allowlist. Google OAuth secrets do not belong in browser code or Vercel public variables. See [DEPLOYMENT.md](./DEPLOYMENT.md) for the complete Vercel setup.
+
 No storage bucket is created and audio recording retention is disabled. All learning tables enable RLS. Browser clients can read their own data, edit their own profile, and delete their own sessions. Session writes, quota counters, report leases, and report commits are restricted to server functions callable by the service role. The API authenticates the user and verifies session ownership before privileged work.
 
 ## Gemini setup
@@ -90,6 +92,8 @@ The project uses webpack for predictable Windows builds. If a restricted executi
 - [ ] End or navigate away; confirm the browser microphone indicator clears and audio/WebSocket resources close.
 
 ## Deploy
+
+**Preferred deployment: Vercel for the Next.js frontend and API routes, Supabase for PostgreSQL and authentication, and Gemini for voice and reports.** `vercel.json` selects the ordinary Next.js build; Sites' Worker adapter is not used on Vercel. Follow [DEPLOYMENT.md](./DEPLOYMENT.md). The previously published private Sites preview remains separate until a Vercel deployment is connected.
 
 Deploy the Next.js repository to Vercel or a Node host supporting **Node 22+**, HTTPS, outbound Google/Supabase requests, and at least a 120-second route runtime for analysis. Run `npm ci`, `npm run build`, and `npm start`. Set all environment variables in your host's secret settings; public Supabase values must exist at build time. Set production Supabase callback allowlists and SMTP. Apply the migration before serving authenticated traffic. No app WebSocket server is required: browsers connect directly to Gemini using the issued token.
 

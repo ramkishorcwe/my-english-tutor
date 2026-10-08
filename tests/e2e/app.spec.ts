@@ -68,3 +68,19 @@ test('private API fails closed without credentials', async ({ request }) => {
   const body = await response.json();
   expect(body.error).toContain('not configured');
 });
+
+test('Google sign-in explains missing setup and stays retryable', async ({ page }) => {
+  await page.goto('/signin');
+  await page.getByRole('button', { name: 'Continue with Google' }).click();
+  await expect(page.locator('.auth-card').getByRole('alert')).toContainText('enabled Google provider');
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Send me a sign-in link' })).toBeEnabled();
+});
+
+test('cancelled Google login returns to a safe recovery screen', async ({ page }) => {
+  await page.goto('/auth/callback?error=access_denied&error_description=untrusted-provider-text');
+  await expect(page).toHaveURL(/\/signin\?error=oauth$/);
+  await expect(page.locator('.auth-card').getByRole('alert')).toContainText('Google sign-in was cancelled');
+  await expect(page.getByText('untrusted-provider-text')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeEnabled();
+});

@@ -11,3 +11,4 @@ test-results/
 dist/
 .dev.vars*
 .vercel/
+credential*.txt

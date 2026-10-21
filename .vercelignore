@@ -11,3 +11,4 @@ playwright-report
 .env*
 *.tsbuildinfo
 credential*.txt
+secrets.txt

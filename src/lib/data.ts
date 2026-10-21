@@ -213,7 +213,16 @@ export async function api<T = Record<string, unknown>>(
     headers: { 'Content-Type': 'application/json' },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      response.status === 504
+        ? 'The service took too long to respond. Your saved conversation is safe; please retry.'
+        : 'The service returned an unexpected response. Please retry in a moment.',
+    );
+  }
   if (!response.ok) throw new Error(data.error || 'Something went wrong. Please retry.');
   return data as T;
 }

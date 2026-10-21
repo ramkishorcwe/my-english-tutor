@@ -4,12 +4,12 @@ Use Vercel for the frontend **and the Next.js API routes**. Use Supabase for aut
 
 ## Accounts
 
-| Service | Purpose | Account / console |
-| --- | --- | --- |
-| Vercel | Next.js hosting | https://vercel.com/signup |
-| Supabase | Database, email login, Google login | https://supabase.com/dashboard |
-| Google Cloud | OAuth client for Google login | https://console.cloud.google.com/auth/overview |
-| Google AI Studio | Gemini API key and model access | https://aistudio.google.com/ |
+| Service          | Purpose                             | Account / console                              |
+| ---------------- | ----------------------------------- | ---------------------------------------------- |
+| Vercel           | Next.js hosting                     | https://vercel.com/signup                      |
+| Supabase         | Database, email login, Google login | https://supabase.com/dashboard                 |
+| Google Cloud     | OAuth client for Google login       | https://console.cloud.google.com/auth/overview |
+| Google AI Studio | Gemini API key and model access     | https://aistudio.google.com/                   |
 
 Use existing accounts when available. Account passwords are not needed in source code or chat. Authenticate the Vercel CLI locally or connect the appropriate account/integration; configure service secrets in project settings.
 
@@ -37,19 +37,24 @@ Google OAuth is independent of the Gemini API key. Configuring one does not conf
 
 Set these in the intended Vercel project and environment before building. Public values are included in the browser build; server credentials stay on the server.
 
-| Variable | Value / handling |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL; public |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key; public |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key; server secret |
-| `GEMINI_API_KEY` | Google AI Studio API key; server secret |
-| `GEMINI_LIVE_MODEL` | Supported Live model for your account; see `.env.example` |
-| `GEMINI_REPORT_MODEL` | Supported analysis model for your account; see `.env.example` |
-| `NEXT_PUBLIC_SITE_URL` | Final HTTPS production origin |
+| Variable                               | Value / handling                                                                                             |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase Project URL; public                                                                                 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key; public                                                                             |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Supabase service-role key; server secret                                                                     |
+| `GEMINI_API_KEY`                       | Google AI Studio API key; server secret                                                                      |
+| `GEMINI_LIVE_MODEL`                    | Supported Live model for your account; see `.env.example`                                                    |
+| `GEMINI_REPORT_MODEL`                  | Supported analysis model for your account; see `.env.example`                                                |
+| `GEMINI_REPORT_FALLBACK_MODEL`         | Optional backup analysis model; defaults to `gemini-3.8-flash` (or `gemini-3.6-flash` if the primary is 3.8) |
+| `NEXT_PUBLIC_SITE_URL`                 | Final HTTPS production origin                                                                                |
 
 Select Node.js 24 in Vercel project settings. Framework preset: Next.js. Root directory: this repository root. Build command: `npm run build`. Install command: `npm ci`. Use the standard Next.js output; do not set an output directory to `dist` or run `build:sites`. API routes declare a 120-second maximum duration; ensure the project supports that duration.
 
 ## Deploy and verify
+
+Report generation makes at most three 25-second requests, retrying temporary provider failures and checking every learner quotation before saving. Failed reports remain retryable, including ones that hit the old five-attempt cap; generation is limited to six requests per user per hour. Existing saved reports are returned without another model call. No database migration is needed for this update.
+
+The practice page offers recent BBC News headlines in Technology, World, and Science, with source links, publication dates, and discussion questions. `/api/topics` refreshes the public feeds about every 15 minutes, excludes headlines older than 72 hours, and leaves ordinary practice available during feed outages. No news API key is needed.
 
 For a Git-connected deployment, push this source to your Git provider and import that repository into Vercel. Alternatively, with Node 24 installed, authenticate and deploy the local source:
 

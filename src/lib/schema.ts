@@ -39,7 +39,7 @@ export const turnSchema = z.object({
 export type Turn = z.infer<typeof turnSchema>;
 const evidence = { turnId: z.string(), original: z.string().min(1) };
 export const reportSchema = z.object({
-  summary: z.string(),
+  summary: z.string().trim().min(1),
   successes: z.array(z.string()).max(5),
   strengths: z.array(z.string()).max(5),
   priorities: z.array(z.string()).max(3),

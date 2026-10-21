@@ -1,5 +1,134 @@
 @import 'tailwindcss';
 
+.hot-topics {
+  margin-bottom: 36px;
+}
+.hot-topics .section-heading {
+  align-items: start;
+  gap: 16px;
+}
+.hot-topics .section-heading p {
+  max-width: 640px;
+  margin-top: 8px;
+}
+.hot-topics .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.topic-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+.topic-filters button {
+  padding: 10px 17px;
+  border-radius: 24px;
+  background: #edf2ee;
+  min-height: 44px;
+}
+.topic-filters button.active {
+  background: #1b5f50;
+  color: #fff;
+}
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.topic-card {
+  padding: 21px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.topic-card.selected {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal);
+  background: #f0f7f3;
+}
+.topic-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.topic-meta span {
+  font-weight: 600;
+  color: var(--deep);
+}
+.topic-card h3 {
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  overflow-wrap: anywhere;
+}
+.topic-card p {
+  font-size: 12px;
+  color: var(--text);
+}
+.topic-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.topic-actions a {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 12px;
+}
+.topic-actions .button {
+  font-size: 12px;
+  padding: 9px 12px;
+}
+.topics-note {
+  margin-top: 16px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.topics-status {
+  padding: 22px;
+  background: var(--mint);
+  border-radius: 12px;
+}
+.topics-status .text-link {
+  margin-top: 12px;
+}
+.topic-selection-note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--deep);
+  font-weight: 600;
+}
+@media (max-width: 1100px) {
+  .topic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .topic-grid {
+    grid-template-columns: 1fr;
+  }
+  .hot-topics .section-heading {
+    flex-wrap: wrap;
+  }
+  .topic-card {
+    padding: 18px;
+  }
+}
+
 :root {
   --bg: #f8faf9;
   --white: #fff;

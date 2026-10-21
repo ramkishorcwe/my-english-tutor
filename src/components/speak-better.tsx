@@ -52,6 +52,7 @@ import {
   type Vocabulary,
 } from '@/lib/data';
 import { LiveConversation } from './live-conversation';
+import { HotTopics } from './hot-topics';
 
 const icons: Record<string, LucideIcon> = {
   messages: MessagesSquare,
@@ -624,6 +625,7 @@ function WeekChart({ sessions, demo }: { sessions: PracticeSession[]; demo: bool
 function Practice({ data, onError }: { data: AppData; onError: (s: string) => void }) {
   const search = useSearchParams();
   const router = useRouter();
+  const topicInput = useRef<HTMLTextAreaElement>(null);
   const [mode, setMode] = useState(search.get('mode') || 'free');
   const [topic, setTopic] = useState(
     search.get('topic') ||
@@ -664,6 +666,14 @@ function Practice({ data, onError }: { data: AppData; onError: (s: string) => vo
         title="A conversation for every kind of day."
         description="Pick a starting point. Your AI coach will take it from there."
       />
+      <HotTopics
+        activeTopic={topic}
+        onSelect={(item) => {
+          setMode('custom');
+          setTopic(item.practiceTopic);
+          topicInput.current?.focus();
+        }}
+      />
       <div className="practice-layout">
         <div className="mode-picker">
           {modes.map((m) => {
@@ -694,6 +704,7 @@ function Practice({ data, onError }: { data: AppData; onError: (s: string) => vo
           <label>
             What’s on your mind?
             <textarea
+              ref={topicInput}
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               maxLength={240}

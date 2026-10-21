@@ -25,13 +25,30 @@ describe('summary generation recovery', () => {
     ).toEqual(demoReport);
     expect(generate.mock.calls.map(([params]) => params.model)).toEqual([
       'primary',
-      'primary',
+      'backup',
       'backup',
     ]);
     expect(generate.mock.calls[0][0].config.httpOptions).toEqual({
       timeout: 25000,
       retryOptions: { attempts: 1 },
     });
+  });
+  it('constrains model references to short learner IDs and saves original transcript IDs', async () => {
+    const output = structuredClone(demoReport);
+    for (const item of [
+      ...output.grammar,
+      ...output.expressions,
+      ...output.vocabulary,
+      ...output.exercises,
+    ])
+      item.turnId = `turn_${demoTurns.findIndex((turn) => turn.id === item.turnId) + 1}`;
+    const generate = vi.fn().mockResolvedValue(response(output));
+    expect(await generateReport('Cafe', demoTurns, { model: 'primary', generate, pause })).toEqual(
+      demoReport,
+    );
+    const input = JSON.parse(generate.mock.calls[0][0].contents);
+    expect(input.turns[1].id).toBe('turn_2');
+    expect(JSON.stringify(input)).not.toContain(demoTurns[1].id);
   });
   it('repairs ungrounded quotes before returning a report', async () => {
     const invalid = structuredClone(demoReport);

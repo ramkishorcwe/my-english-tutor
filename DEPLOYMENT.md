@@ -45,14 +45,14 @@ Set these in the intended Vercel project and environment before building. Public
 | `GEMINI_API_KEY`                       | Google AI Studio API key; server secret                                                                      |
 | `GEMINI_LIVE_MODEL`                    | Supported Live model for your account; see `.env.example`                                                    |
 | `GEMINI_REPORT_MODEL`                  | Supported analysis model for your account; see `.env.example`                                                |
-| `GEMINI_REPORT_FALLBACK_MODEL`         | Optional backup analysis model; defaults to `gemini-3.8-flash` (or `gemini-3.6-flash` if the primary is 3.8) |
+| `GEMINI_REPORT_FALLBACK_MODEL`         | Optional backup analysis model; defaults to `gemini-3.5-flash-lite` |
 | `NEXT_PUBLIC_SITE_URL`                 | Final HTTPS production origin                                                                                |
 
 Select Node.js 24 in Vercel project settings. Framework preset: Next.js. Root directory: this repository root. Build command: `npm run build`. Install command: `npm ci`. Use the standard Next.js output; do not set an output directory to `dist` or run `build:sites`. API routes declare a 120-second maximum duration; ensure the project supports that duration.
 
 ## Deploy and verify
 
-Report generation makes at most three 25-second requests, retrying temporary provider failures and checking every learner quotation before saving. Failed reports remain retryable, including ones that hit the old five-attempt cap; generation is limited to six requests per user per hour. Existing saved reports are returned without another model call. No database migration is needed for this update.
+Report generation makes at most three requests within a 100-second budget. It switches from an unavailable primary model to the backup immediately, allowing up to 50 seconds for backup analysis. Short, schema-constrained learner references are mapped back to transcript UUIDs and every quotation is verified before saving. Failed reports remain retryable, including ones that hit the old five-attempt cap; generation is limited to six requests per user per hour. Existing saved reports are returned without another model call. No database migration is needed for this update.
 
 The practice page offers recent BBC News headlines in Technology, World, and Science, with source links, publication dates, and discussion questions. `/api/topics` refreshes the public feeds about every 15 minutes, excludes headlines older than 72 hours, and leaves ordinary practice available during feed outages. No news API key is needed.
 

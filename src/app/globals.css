@@ -1,5 +1,56 @@
 @import 'tailwindcss';
 
+.reminder-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.reminder-heading h2 {
+  margin: 0;
+}
+.reminder-panel > p {
+  color: var(--text);
+  margin: 10px 0;
+}
+.reminder-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+.reminder-fields label,
+.reminder-fields select {
+  min-width: 0;
+}
+.reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+}
+.reminder-panel .reminder-state {
+  color: var(--deep);
+  font-weight: 600;
+}
+.reminder-panel .reminder-note {
+  font-size: 11px;
+  margin-top: 18px;
+  line-height: 1.8;
+}
+.reminder-panel .reminder-success {
+  color: var(--deep);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .reminder-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .hot-topics {
   margin-bottom: 36px;
 }

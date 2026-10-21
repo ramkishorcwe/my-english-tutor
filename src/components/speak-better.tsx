@@ -53,6 +53,8 @@ import {
 } from '@/lib/data';
 import { LiveConversation } from './live-conversation';
 import { HotTopics } from './hot-topics';
+import { PracticeReminder } from './practice-reminder';
+import { disconnectReminderBrowser } from '@/lib/reminders';
 
 const icons: Record<string, LucideIcon> = {
   messages: MessagesSquare,
@@ -167,6 +169,7 @@ export function SpeakBetter() {
   const profile = data.profile ?? defaultProfile;
   const name = demo ? 'there' : profile.name.split(' ')[0];
   async function signOut() {
+    await disconnectReminderBrowser().catch(() => {});
     await browserDb().auth.signOut();
     window.dispatchEvent(new Event('speakbetter:signout'));
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
@@ -1528,6 +1531,7 @@ function SettingsPage({
           </button>
         </section>
         <div>
+          <PracticeReminder userId={data.user?.id} />
           <section className="panel">
             <h2>Your coach</h2>
             <label>

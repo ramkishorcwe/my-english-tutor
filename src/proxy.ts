@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   // Public news feeds have no session data and must not refresh/set auth cookies.
-  if (request.nextUrl.pathname === '/api/topics') return response;
+  if (['/api/topics', '/api/reminders/dispatch'].includes(request.nextUrl.pathname))
+    return response;
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
     return response;
   const db = createServerClient(

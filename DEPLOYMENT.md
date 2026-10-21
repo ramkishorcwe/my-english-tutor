@@ -37,20 +37,30 @@ Google OAuth is independent of the Gemini API key. Configuring one does not conf
 
 Set these in the intended Vercel project and environment before building. Public values are included in the browser build; server credentials stay on the server.
 
-| Variable                               | Value / handling                                                                                             |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase Project URL; public                                                                                 |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key; public                                                                             |
-| `SUPABASE_SERVICE_ROLE_KEY`            | Supabase service-role key; server secret                                                                     |
-| `GEMINI_API_KEY`                       | Google AI Studio API key; server secret                                                                      |
-| `GEMINI_LIVE_MODEL`                    | Supported Live model for your account; see `.env.example`                                                    |
-| `GEMINI_REPORT_MODEL`                  | Supported analysis model for your account; see `.env.example`                                                |
+| Variable                               | Value / handling                                                    |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase Project URL; public                                        |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key; public                                    |
+| `SUPABASE_SERVICE_ROLE_KEY`            | Supabase service-role key; server secret                            |
+| `GEMINI_API_KEY`                       | Google AI Studio API key; server secret                             |
+| `GEMINI_LIVE_MODEL`                    | Supported Live model for your account; see `.env.example`           |
+| `GEMINI_REPORT_MODEL`                  | Supported analysis model for your account; see `.env.example`       |
 | `GEMINI_REPORT_FALLBACK_MODEL`         | Optional backup analysis model; defaults to `gemini-3.5-flash-lite` |
-| `NEXT_PUBLIC_SITE_URL`                 | Final HTTPS production origin                                                                                |
+| `NEXT_PUBLIC_SITE_URL`                 | Final HTTPS production origin                                       |
 
 Select Node.js 24 in Vercel project settings. Framework preset: Next.js. Root directory: this repository root. Build command: `npm run build`. Install command: `npm ci`. Use the standard Next.js output; do not set an output directory to `dist` or run `build:sites`. API routes declare a 120-second maximum duration; ensure the project supports that duration.
 
 ## Deploy and verify
+
+### Daily practice reminders
+
+Apply `supabase/migrations/002_practice_reminders.sql` after the original migration. Generate a Web Push VAPID key pair once and keep it stable: changing the signing key requires browsers to subscribe again. Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (the HTTPS app origin or a contact mailto URL), and a random `REMINDER_CRON_SECRET` to Vercel. The private key and scheduler secret are server-only secrets.
+
+Save that same scheduler secret in Supabase Vault under `speakbetter_reminder_cron`, then run `supabase/schedule-practice-reminders.sql`. The SQL uses pg_cron and pg_net to call the authenticated Vercel dispatch endpoint only when reminders are due. Update its production URL when deploying another instance. Inspect Cron job runs and pg_net responses to diagnose delivery failures; never put the literal secret in a saved SQL query.
+
+Settings defaults to **7:30 PM, Asia/Kolkata**. Each learner enables notifications through a browser permission prompt, can change the time and time zone, send a test, disconnect a browser, or turn reminders off. Push works with the tab closed when the browser/device allows background delivery; iPhone requires installing the app on the Home Screen. Signing out disconnects the current browser. Notifications contain a generic practice prompt, with no learning records or transcript content. Delivery retries for up to 15 minutes, with database claims preventing overlapping dispatches and a per-user daily completion marker. Device/network settings can delay or suppress a notification.
+
+Browser test environments: the normal preview suite runs with the public Supabase variables unset, including the missing-credentials recovery tests. For `tests/e2e/reminders.spec.ts`, start the app with dummy public values (`NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable-key`), then run that file with `PLAYWRIGHT_REMINDERS_CONFIGURED=1`. Bootstrap, subscriptions, and permission results are mocked; no real keys or notifications are used. Database scheduling tests run separately with PGlite through `npm test`.
 
 Report generation makes at most three requests within a 100-second budget. It switches from an unavailable primary model to the backup immediately, allowing up to 50 seconds for backup analysis. Short, schema-constrained learner references are mapped back to transcript UUIDs and every quotation is verified before saving. Failed reports remain retryable, including ones that hit the old five-attempt cap; generation is limited to six requests per user per hour. Existing saved reports are returned without another model call. No database migration is needed for this update.
 

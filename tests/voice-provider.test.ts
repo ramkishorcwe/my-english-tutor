@@ -29,12 +29,30 @@ let callbacks: {
 };
 let track: { stop: ReturnType<typeof vi.fn>; enabled: boolean; onended: null | (() => void) };
 let contextClose: ReturnType<typeof vi.fn>;
-const events = () => ({ onState: vi.fn(), onTurn: vi.fn(), onError: vi.fn(), onLevel: vi.fn() });
+let audioContext: {
+  state: string;
+  onstatechange: null | (() => void);
+  resume: ReturnType<typeof vi.fn>;
+};
+let resumeContext: ReturnType<typeof vi.fn>;
+let initialContextState: string;
+const events = () => ({
+  onState: vi.fn(),
+  onTurn: vi.fn(),
+  onError: vi.fn(),
+  onLevel: vi.fn(),
+  onPlaybackBlocked: vi.fn(),
+});
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   track = { stop: vi.fn(), enabled: true, onended: null };
   contextClose = vi.fn();
+  initialContextState = 'running';
+  resumeContext = vi.fn().mockImplementation(async () => {
+    audioContext.state = 'running';
+    audioContext.onstatechange?.();
+  });
   mock.connect.mockImplementation(async (options) => {
     callbacks = options.callbacks;
     return { sendRealtimeInput: mock.send, sendClientContent: mock.content, close: mock.close };
@@ -49,10 +67,14 @@ beforeEach(() => {
   vi.stubGlobal(
     'AudioContext',
     class {
-      state = 'running';
+      state = initialContextState;
+      onstatechange: null | (() => void) = null;
+      constructor() {
+        audioContext = this;
+      }
       audioWorklet = { addModule: vi.fn() };
       destination = {};
-      resume = vi.fn();
+      resume = resumeContext;
       close = contextClose;
       createMediaStreamSource = () => ({ connect: vi.fn(), disconnect: vi.fn() });
       createGain = () => ({ gain: { value: 0 }, connect: vi.fn(), disconnect: vi.fn() });
@@ -85,6 +107,38 @@ afterEach(() => {
 });
 
 describe('Voice provider lifecycle', () => {
+  it('recovers suspended output without restarting the microphone or losing tutor audio', async () => {
+    const cb = events();
+    const provider = new GeminiVoiceProvider('session', false, [], cb);
+    await provider.start();
+    audioContext.state = 'suspended';
+    audioContext.onstatechange?.();
+    expect(cb.onPlaybackBlocked).toHaveBeenLastCalledWith(true);
+    callbacks.onmessage({
+      serverContent: {
+        modelTurn: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'audio/pcm;rate=24000' } }] },
+      },
+    });
+    await provider.resumeAudio();
+    expect(resumeContext).toHaveBeenCalledOnce();
+    expect(cb.onPlaybackBlocked).toHaveBeenLastCalledWith(false);
+    expect(mock.enqueue).toHaveBeenCalledWith('AAAA');
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledOnce();
+    await provider.stop();
+  });
+  it('a pending browser resume does not hang connection and the recovery action times out clearly', async () => {
+    const cb = events();
+    const provider = new GeminiVoiceProvider('session', false, [], cb);
+    initialContextState = 'suspended';
+    resumeContext.mockImplementation(() => new Promise(() => {}));
+    await provider.start();
+    expect(mock.connect).toHaveBeenCalledOnce();
+    const recovery = expect(provider.resumeAudio()).rejects.toThrow('Allow sound');
+    await vi.advanceTimersByTimeAsync(2000);
+    await recovery;
+    expect(cb.onPlaybackBlocked).toHaveBeenLastCalledWith(true);
+    await provider.stop();
+  });
   it('explains microphone permission recovery and closes its audio context', async () => {
     vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValue(
       new DOMException('Denied', 'NotAllowedError'),

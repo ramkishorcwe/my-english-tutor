@@ -41,6 +41,9 @@ export function LiveConversation({
   const [talking, setTalking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [level, setLevel] = useState(0);
+  const [playbackBlocked, setPlaybackBlocked] = useState(false);
+  const [soundError, setSoundError] = useState('');
+  const [resumingSound, setResumingSound] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [loading, setLoading] = useState(true);
   const [help, setHelp] = useState('');
@@ -183,6 +186,9 @@ export function LiveConversation({
         },
         onLevel: (s) => {
           if (!unmounted.current) setLevel(s);
+        },
+        onPlaybackBlocked: (blocked) => {
+          if (!unmounted.current) setPlaybackBlocked(blocked);
         },
         onTurn: (t) => {
           if (unmounted.current || ended.current) return;
@@ -388,6 +394,31 @@ export function LiveConversation({
                     ? 'Microphone muted'
                     : 'Microphone on · Tap to mute'}
           </span>
+          {playbackBlocked && (
+            <div className="sound-recovery" role="status">
+              <p>Your browser paused tutor audio. Enable sound to hear your coach.</p>
+              <button
+                className="button secondary"
+                disabled={resumingSound}
+                onClick={() => {
+                  setResumingSound(true);
+                  setSoundError('');
+                  void provider.current
+                    ?.resumeAudio()
+                    .catch((e: Error) => setSoundError(e.message))
+                    .finally(() => setResumingSound(false));
+                }}
+              >
+                {resumingSound ? 'Enabling sound…' : 'Enable tutor sound'}
+              </button>
+              {soundError && <p role="alert">{soundError}</p>}
+            </div>
+          )}
+          {connected && (
+            <p className="control-caption">
+              No sound? Check your device volume and unmute this browser tab.
+            </p>
+          )}
           <div className="live-secondary-controls">
             {push && (
               <button

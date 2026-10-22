@@ -6,6 +6,7 @@ export interface VoiceCallbacks {
   onTurn: (turn: Turn) => void;
   onError: (message: string) => void;
   onLevel: (value: number) => void;
+  onPlaybackBlocked?: (blocked: boolean) => void;
 }
 export interface VoiceProvider {
   start: () => Promise<void>;
@@ -14,5 +15,6 @@ export interface VoiceProvider {
   setTalking: (talking: boolean) => void;
   sendText: (text: string) => void;
   replay: () => void;
+  resumeAudio: () => Promise<void>;
   interrupt: () => void;
 }

@@ -2009,6 +2009,22 @@ blockquote {
   color: #576b57;
   margin-top: 20px;
 }
+.sound-recovery {
+  max-width: 420px;
+  padding: 16px;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  font-size: 13px;
+}
+.sound-recovery p {
+  margin-bottom: 12px;
+}
+.sound-recovery [role='alert'] {
+  margin: 12px 0 0;
+}
 .live-secondary-controls {
   display: flex;
   gap: 23px;

@@ -82,6 +82,7 @@ The project uses webpack for predictable Windows builds. If a restricted executi
 - [ ] Talk over the coach: verify current and queued audio stop immediately on the provider interruption event. Test the explicit pause control and replay.
 - [ ] Deny microphone permission, read recovery instructions, allow permission in browser site settings, and retry. Unplug the microphone or make it busy in another application.
 - [ ] Test mute/unmute, captions, slower speech, hints, explanations, and native-language rescue prompts.
+- [ ] Suspend browser audio or switch away and return during tutor speech. Verify **Enable tutor sound** restores queued audio without reconnecting or losing captions. Replay must also resume paused playback. Check device volume and the browser tab's sound setting if playback is running but remains inaudible.
 - [ ] Disconnect/reconnect the network; verify reconnect state, backoff, resumption, clear terminal errors, and retained transcript. Test a session beyond ten minutes to exercise GoAway.
 - [ ] Refresh during practice; reconnect and confirm saved transcript context survives. End while network is unavailable; recover and retry without losing drafts.
 - [ ] End repeatedly and concurrently; confirm one ended record and one report. Verify every correction quotes a real learner turn. Confirm speaking/pronunciation metrics remain unavailable.

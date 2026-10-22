@@ -53,7 +53,10 @@ export class GeminiVoiceProvider implements VoiceProvider {
       if (!navigator.mediaDevices?.getUserMedia)
         throw new Error('Microphone access requires HTTPS or localhost and a supported browser.');
       this.context = new AudioContext();
-      await this.context.resume();
+      this.context.onstatechange = () => this.playbackState();
+      // A browser can leave resume() pending until another user gesture. Keep
+      // connecting and expose the sound recovery control instead of hanging.
+      void this.resumeAudio().catch(() => {});
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -325,8 +328,48 @@ export class GeminiVoiceProvider implements VoiceProvider {
   }
   replay() {
     this.player?.interrupt();
-    for (const data of this.latestAudio) this.player?.enqueue(data);
-    if (this.latestAudio.length) this.cb.onState('speaking');
+    const audio = [...(this.currentAudio.length ? this.currentAudio : this.latestAudio)];
+    void this.resumeAudio()
+      .then(() => {
+        if (this.closed) return;
+        for (const data of audio) this.player?.enqueue(data);
+        if (audio.length) this.cb.onState('speaking');
+      })
+      .catch(() => {});
+  }
+  private playbackState() {
+    this.cb.onPlaybackBlocked?.(
+      Boolean(this.context && !this.closed && this.context.state !== 'running'),
+    );
+  }
+  async resumeAudio() {
+    const context = this.context;
+    if (!context || this.closed) return;
+    this.playbackState();
+    if (context.state === 'running') return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // Call resume synchronously from the button's user gesture.
+      await Promise.race([
+        context.resume(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Sound is still paused. Allow sound in this browser tab, then try again.',
+                ),
+              ),
+            2000,
+          );
+        }),
+      ]);
+      if (!this.closed && (context.state as AudioContextState) !== 'running')
+        throw new Error('Sound is still paused. Return to this tab and try again.');
+    } finally {
+      clearTimeout(timer);
+      this.playbackState();
+    }
   }
   interrupt() {
     this.suppressOutput = true;
@@ -347,6 +390,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
   }
   async stop() {
     this.closed = true;
+    if (this.context) this.context.onstatechange = null;
+    this.cb.onPlaybackBlocked?.(false);
     this.connectionEpoch++;
     clearTimeout(this.retryTimer);
     clearTimeout(this.deadlineTimer);

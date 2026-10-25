@@ -1,5 +1,231 @@
 @import 'tailwindcss';
 
+.writing-entry {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 26px;
+}
+.writing-entry div {
+  flex: 1;
+}
+.writing-entry strong {
+  color: var(--deep);
+}
+.writing-entry p,
+.writing-note {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text);
+  margin-top: 8px;
+}
+.writing-start-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.writing-intro > * + * {
+  margin-top: 20px;
+}
+.writing-intro h1 {
+  font-size: 30px;
+}
+.writing-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.writing-topics .selected {
+  outline: 2px solid var(--deep);
+}
+.writing-history {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+}
+.writing-history li + li {
+  border-top: 1px solid var(--line);
+}
+.writing-history a {
+  padding: 18px 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+.writing-history span {
+  font-size: 12px;
+  color: var(--text);
+  grid-row: 2;
+}
+.writing-history svg {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+}
+.writing-chat-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 26px;
+}
+.writing-chat-heading .eyebrow {
+  margin-top: 24px;
+}
+.writing-chat-heading h1 {
+  font-size: clamp(24px, 3vw, 36px);
+  margin: 12px 0;
+}
+.writing-chat-heading p {
+  color: var(--text);
+  font-size: 13px;
+}
+.writing-conversation {
+  margin-top: 24px;
+}
+.writing-messages {
+  max-height: 580px;
+  overflow-y: auto;
+  padding: 24px 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.writing-message {
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: #f0f4ee;
+  max-width: 86%;
+  align-self: flex-start;
+}
+.writing-message.user {
+  align-self: flex-end;
+  background: #e2f1eb;
+}
+.writing-message span {
+  color: var(--deep);
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.writing-message p,
+.writing-original,
+.writing-corrected {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.85;
+  font-size: 15px;
+  margin-top: 8px;
+}
+.writing-thinking {
+  color: var(--text);
+  font-size: 13px;
+}
+.writing-composer {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.writing-composer textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+.writing-composer > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+.writing-composer span {
+  font-size: 11px;
+  color: var(--text);
+}
+.writing-retry {
+  margin-top: 20px;
+  padding: 18px;
+  background: #fff4df;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.writing-retry button {
+  margin-top: 12px;
+}
+.writing-review .eyebrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.writing-review > p {
+  color: var(--text);
+  font-size: 13px;
+  margin: 12px 0 24px;
+}
+.writing-feedback {
+  border-top: 1px solid var(--line);
+  padding: 25px 0;
+}
+.writing-feedback h3 {
+  font-size: 15px;
+}
+.writing-original {
+  padding: 16px;
+  background: #f6f7f4;
+  border-radius: 10px;
+  margin: 12px 0 18px;
+}
+.writing-original mark {
+  color: #752f20;
+  background: #ffe1c9;
+  border-bottom: 2px solid #a94732;
+  border-radius: 3px;
+}
+.writing-corrected {
+  color: #174f41;
+  padding: 16px;
+  background: #eaf4ef;
+  border-radius: 10px;
+}
+.writing-feedback ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.writing-feedback li {
+  padding: 15px 0;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.writing-feedback li p {
+  margin-top: 8px;
+}
+.writing-clear {
+  display: flex;
+  gap: 8px;
+  color: var(--deep);
+  font-size: 13px;
+  align-items: center;
+}
+@media (max-width: 760px) {
+  .writing-start-layout {
+    grid-template-columns: 1fr;
+  }
+  .writing-chat-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .writing-message {
+    max-width: 96%;
+    padding: 15px;
+  }
+  .writing-composer > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .reminder-heading {
   display: flex;
   gap: 10px;

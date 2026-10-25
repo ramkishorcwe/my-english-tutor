@@ -44,6 +44,8 @@ The app deliberately allows a 1.6-second silence window with low end-of-speech s
 
 ## Architecture and behavior
 
+**Writing chat** is available at `/chat` and in the sidebar. Choose a topic or let the AI tutor choose, write your responses, then select **End & review writing**. The final review checks every message, highlights phrases to improve, shows corrected sentences, and explains the changes. Optional alternatives are labeled separately. Chats and reviews are private and saved; no microphone is used. Apply `supabase/migrations/003_writing_chat.sql` and see [DEPLOYMENT.md](./DEPLOYMENT.md) for the optional chat model and verification setup.
+
 - `src/lib/voice/provider.ts`: provider-independent voice contract.
 - `src/lib/voice/gemini.ts`: Gemini connection, captions, resumption, voice controls, and resource cleanup.
 - `public/pcm-worklet.js`, `src/lib/voice/audio.ts`: microphone conversion and scheduled playback. Interruptions stop and disconnect every queued source immediately.

@@ -52,6 +52,16 @@ Select Node.js 24 in Vercel project settings. Framework preset: Next.js. Root di
 
 ## Deploy and verify
 
+### Written chat and writing reviews
+
+Apply `supabase/migrations/003_writing_chat.sql` once before serving the `/chat` feature. It creates private chat, message, request-lease, and review-progress tables. Browser roles cannot access these tables or service functions directly; authenticated API routes check ownership before server writes. Existing voice sessions and reports use their original storage.
+
+`GEMINI_CHAT_MODEL` is optional and defaults to `gemini-3.5-flash-lite`, using the existing server `GEMINI_API_KEY`. The tutor opens the conversation and retains saved context for each reply. Each chat permits 30 learner messages, up to 2,000 characters each; starts are limited to ten per UTC day, message requests to twelve per minute, and review requests to six per hour. Retries reuse request IDs and database leases to prevent duplicate messages and stale replies.
+
+Ending a chat preserves the conversation and reviews every learner message in batches of three with up to three workers. Each suggested correction must quote an exact substring from the corresponding learner message; IDs and complete message coverage are validated before saving. Completed batches are cached for retry. Real errors are highlighted; optional style suggestions are labeled separately. The review includes a full corrected version of each changed message and explanations, with no inferred speech metrics. AI feedback can still miss errors or misunderstand intended meaning.
+
+For `tests/e2e/writing.spec.ts`, use a local app with dummy public Supabase values as described below and set `PLAYWRIGHT_WRITING_CONFIGURED=1`. The suite mocks authentication and AI responses while checking tutor-led opening, error highlights, saved-review refresh, duplicate-safe retry, mobile layout, and accessibility. Use a signed-in production browser for a real chat/review smoke test.
+
 ### Daily practice reminders
 
 Apply `supabase/migrations/002_practice_reminders.sql` after the original migration. Generate a Web Push VAPID key pair once and keep it stable: changing the signing key requires browsers to subscribe again. Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (the HTTPS app origin or a contact mailto URL), and a random `REMINDER_CRON_SECRET` to Vercel. The private key and scheduler secret are server-only secrets.

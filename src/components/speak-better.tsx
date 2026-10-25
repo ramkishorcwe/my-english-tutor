@@ -54,6 +54,7 @@ import {
 import { LiveConversation } from './live-conversation';
 import { HotTopics } from './hot-topics';
 import { PracticeReminder } from './practice-reminder';
+import { WritingChatPage } from './writing-chat';
 import { disconnectReminderBrowser } from '@/lib/reminders';
 
 const icons: Record<string, LucideIcon> = {
@@ -69,6 +70,7 @@ const icons: Record<string, LucideIcon> = {
 const navigation = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/practice', label: 'Start practicing', icon: AudioLines },
+  { href: '/chat', label: 'Writing chat', icon: MessagesSquare },
   { href: '/history', label: 'Conversations', icon: MessageCircle },
   { href: '/learn', label: 'My learning', icon: BookOpen },
   { href: '/progress', label: 'My progress', icon: TrendingUp },
@@ -339,6 +341,9 @@ export function SpeakBetter() {
                 <Dashboard data={data} demo={demo} name={name} />
               )}
               {pathname === '/practice' && <Practice data={data} onError={setError} />}
+              {(pathname === '/chat' || pathname.startsWith('/chat/')) && (
+                <WritingChatPage key={pathname} id={pathname.split('/')[2]} data={data} />
+              )}
               {pathname.startsWith('/practice/') && (
                 <LiveConversation
                   key={pathname}
@@ -364,12 +369,14 @@ export function SpeakBetter() {
                 '/',
                 '/dashboard',
                 '/practice',
+                '/chat',
                 '/history',
                 '/learn',
                 '/progress',
                 '/settings',
               ].includes(pathname) &&
                 !pathname.startsWith('/practice/') &&
+                !pathname.startsWith('/chat/') &&
                 !pathname.startsWith('/report/') && (
                   <Empty title="Let’s find your way back">
                     This page doesn’t exist.<Link href="/">Back to overview</Link>
@@ -677,6 +684,14 @@ function Practice({ data, onError }: { data: AppData; onError: (s: string) => vo
           topicInput.current?.focus();
         }}
       />
+      <Link className="writing-entry panel" href="/chat">
+        <MessagesSquare size={23} />
+        <div>
+          <strong>Prefer to write? Chat with your AI tutor.</strong>
+          <p>The tutor starts the conversation. Get highlighted corrections when you finish.</p>
+        </div>
+        <ArrowRight size={18} />
+      </Link>
       <div className="practice-layout">
         <div className="mode-picker">
           {modes.map((m) => {

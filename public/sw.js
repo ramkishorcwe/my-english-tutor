@@ -9,7 +9,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(message.title || 'Time for English practice', {
       body: message.body || 'Your SpeakBetter coach is ready. Take a few minutes to practise.',
       tag: message.tag === 'speakbetter-test' ? 'speakbetter-test' : 'speakbetter-daily',
-      icon: '/icons/reminder.svg',
+      icon: '/icons/speakbetter-192.png',
       data: { url: '/practice' },
     }),
   );

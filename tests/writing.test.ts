@@ -141,7 +141,7 @@ describe('written conversation', () => {
     });
     await expect(
       generateWritingReview([turns[0]], generate, { get: async () => null, set: async () => {} }),
-    ).rejects.toThrow('could not be verified');
+    ).rejects.toThrow('reviewed reliably');
     expect(generate.mock.calls.filter(([p]) => Array.isArray(JSON.parse(p.contents)))).toHaveLength(
       2,
     );
@@ -173,6 +173,96 @@ describe('written conversation', () => {
     await expect(generateWritingReview([turns[0]], generate, cache)).rejects.toThrow('summary');
     expect(saved.has(turns[0].id)).toBe(true);
     expect(saved.has('conversation-summary:v1')).toBe(false);
+  });
+  it('recovers inconsistent batch feedback with server-grounded individual reviews and saves the result', async () => {
+    const saved = new Map<string, unknown>();
+    const cache = {
+      get: async (key: string) => saved.get(key),
+      set: async (key: string, value: unknown) => {
+        saved.set(key, value);
+      },
+    };
+    const repeated = { ...turns[0], text: 'I go to shop. I go to shop.' };
+    const valid = { ...turns[1], text: 'I enjoy reading.' };
+    const generate = vi.fn().mockImplementation(async (parameters) => {
+      const input = JSON.parse(parameters.contents);
+      if (Array.isArray(input))
+        return {
+          text: JSON.stringify({
+            messages: input.map((m: { id: string }) => ({
+              turnId: m.id,
+              corrected: 'I went to the shop.',
+              corrections: [
+                {
+                  original: 'I go',
+                  corrected: 'I went',
+                  explanation: 'Past tense',
+                  kind: 'correction',
+                },
+              ],
+            })),
+          }),
+        };
+      if (input.learnerMessage)
+        return {
+          text: JSON.stringify({
+            corrected:
+              input.learnerMessage === valid.text
+                ? valid.text
+                : 'I went to the shop. I went to the shop.',
+            explanation:
+              input.learnerMessage === valid.text
+                ? ''
+                : 'Use past tense and the article in both sentences.',
+            kind: 'correction',
+          }),
+        };
+      return {
+        text: JSON.stringify({ summary: 'You practised talking about shopping and reading.' }),
+      };
+    });
+    const result = await generateWritingReview([repeated, valid], generate, cache);
+    expect(result.messages.map((m) => m.turnId)).toEqual([repeated.id, valid.id]);
+    expect(result.messages[0].corrections[0].original).toBe(repeated.text);
+    expect(result.messages[0].corrected).toBe('I went to the shop. I went to the shop.');
+    expect(result.messages[1].corrections).toEqual([]);
+    expect(() => validateWritingReview(result, [repeated, valid])).not.toThrow();
+    const calls = generate.mock.calls.length;
+    await generateWritingReview([repeated, valid], generate, cache);
+    expect(generate).toHaveBeenCalledTimes(calls);
+  });
+  it('keeps completed individual feedback if another message fails and reuses it on retry', async () => {
+    const saved = new Map<string, unknown>();
+    const cache = {
+      get: async (key: string) => saved.get(key),
+      set: async (key: string, value: unknown) => {
+        saved.set(key, value);
+      },
+    };
+    let fail = true;
+    const generate = vi.fn().mockImplementation(async (parameters) => {
+      const input = JSON.parse(parameters.contents);
+      if (Array.isArray(input)) return { text: JSON.stringify({ messages: [] }) };
+      if (input.learnerMessage)
+        return {
+          text: JSON.stringify(
+            input.learnerMessage === turns[1].text && fail
+              ? { corrected: '', explanation: '', kind: 'correction' }
+              : { corrected: input.learnerMessage, explanation: '', kind: 'optional' },
+          ),
+        };
+      return { text: JSON.stringify({ summary: 'You practised describing shopping.' }) };
+    });
+    await expect(generateWritingReview(turns.slice(0, 2), generate, cache)).rejects.toThrow(
+      'reviewed reliably',
+    );
+    expect(saved.has(`whole-message:v1:${turns[0].id}`)).toBe(true);
+    fail = false;
+    const result = await generateWritingReview(turns.slice(0, 2), generate, cache);
+    expect(result.messages).toHaveLength(2);
+    expect(
+      generate.mock.calls.filter(([p]) => JSON.parse(p.contents).learnerMessage === turns[0].text),
+    ).toHaveLength(1);
   });
   it('rejects missing messages and made-up quotations instead of saving inaccurate feedback', () => {
     expect(() => validateWritingReview({ messages: [] }, turns)).toThrow('every learner');

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Profile, Turn } from './schema';
 import {
   writingFeedbackSchema,
+  WRITING_CORRECTED_LIMIT,
   validateWritingReview,
   type WritingReview,
   type WritingFeedback,
@@ -20,7 +21,7 @@ export type WritingGenerate = (
 ) => Promise<GenerateContentResponse>;
 // Nested length/count bounds can make Gemini reject multi-message schemas with HTTP 400.
 // Keep those bounds in the original Zod schema for validation after generation.
-function writingResponseSchema(schema: z.ZodType) {
+export function writingResponseSchema(schema: z.ZodType) {
   const localBounds = new Set(['minLength', 'maxLength', 'minItems', 'maxItems']);
   return JSON.parse(
     JSON.stringify(z.toJSONSchema(schema), (key, value) =>
@@ -100,7 +101,7 @@ type WritingReviewCache = {
 };
 const summarySchema = z.object({ summary: z.string().trim().min(1).max(1800) });
 const wholeMessageSchema = z.object({
-  corrected: z.string().trim().min(1).max(6000),
+  corrected: z.string().trim().min(1).max(WRITING_CORRECTED_LIMIT),
   explanation: z.string().trim().max(1500),
   kind: z.enum(['correction', 'optional']),
 });
@@ -127,7 +128,7 @@ async function reviewWholeMessage(
         model: process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash-lite',
         contents: JSON.stringify({ learnerMessage: turn.text }),
         config: {
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
           responseMimeType: 'application/json',
           responseJsonSchema: writingResponseSchema(wholeMessageSchema),
           systemInstruction:
@@ -227,7 +228,16 @@ export async function generateWritingReview(
   const users = turns.filter((t) => t.role === 'user');
   if (!users.length) throw new WritingError('Write a message before requesting a review.', 422);
   const batches: Turn[][] = [];
-  for (let i = 0; i < users.length; i += 3) batches.push(users.slice(i, i + 3));
+  for (const turn of users) {
+    const batch = batches.at(-1);
+    if (
+      !batch ||
+      batch.length >= 3 ||
+      batch.reduce((n, t) => n + t.text.length, 0) + turn.text.length > 4000
+    )
+      batches.push([turn]);
+    else batch.push(turn);
+  }
   const results = new Array<WritingReview>(batches.length);
   let cursor = 0;
   const deadline = Date.now() + 100000;

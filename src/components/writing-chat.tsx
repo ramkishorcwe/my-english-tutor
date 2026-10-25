@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, MessagesSquare, Send, Sparkles } from 'lucide-react';
 import { api, type AppData } from '@/lib/data';
+import { TranslationTool } from './personal-dictionary';
 import {
   writingHighlights,
   writingMessageSchema,
+  WRITING_MESSAGE_LIMIT,
   type WritingChat,
   type WritingReview,
   type WritingThread,
@@ -31,6 +33,8 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
   const attemptedReview = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
+  const translator = useRef<HTMLDetailsElement>(null);
+  const [translationText, setTranslationText] = useState('');
   const inFlight = useRef(false);
   const draftKey = `speakbetter:writing:${data.user?.id}:${id}`;
   const pendingKey = `${draftKey}:pending`;
@@ -426,6 +430,10 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
           )}
         </>
       )}
+      <details className="panel writing-translator" ref={translator}>
+        <summary>Translate & save words to my dictionary</summary>
+        <TranslationTool language={data.profile?.native_language} initialText={translationText} />
+      </details>
       <section className="panel writing-conversation" aria-label="Written conversation">
         <h2>
           {thread.chat.status === 'ended' ? 'Your saved conversation' : 'You and your AI tutor'}
@@ -441,6 +449,18 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
             <div key={turn.id} className={`writing-message ${turn.role}`}>
               <span>{turn.role === 'user' ? 'YOU' : 'AI TUTOR'}</span>
               <p>{turn.text}</p>
+              <button
+                className="text-link writing-translate-button"
+                onClick={() => {
+                  setTranslationText(turn.text);
+                  if (translator.current) {
+                    translator.current.open = true;
+                    translator.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                  }
+                }}
+              >
+                Translate message
+              </button>
               {turn.role === 'user' && pending?.requestId === turn.id && (
                 <small className="writing-message-status">
                   {busy ? 'Waiting for tutor…' : 'Tutor reply needs a retry'}
@@ -502,7 +522,7 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
                 id="writing-message"
                 ref={composer}
                 value={draft}
-                maxLength={2000}
+                maxLength={WRITING_MESSAGE_LIMIT}
                 placeholder="Take your time. Write what you think…"
                 disabled={!thread.turns.length || userCount >= 30}
                 onKeyDown={(e) => {
@@ -519,7 +539,10 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
                 }}
               />
               <div>
-                <span>{draft.length}/2,000 · Enter to send · Shift+Enter for a new line</span>
+                <span>
+                  {draft.length.toLocaleString('en-IN')}/5,000 · Enter to send · Shift+Enter for a
+                  new line
+                </span>
                 <button
                   className="button primary"
                   disabled={

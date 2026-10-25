@@ -124,11 +124,11 @@ describe('written conversation', () => {
             ? {
                 messages: input.map((m: { id: string; text: string }) => ({
                   turnId: m.id,
-                  corrected: 'x'.repeat(6001),
+                  corrected: 'x'.repeat(15001),
                   corrections: [
                     {
                       original: m.text,
-                      corrected: 'x'.repeat(6001),
+                      corrected: 'x'.repeat(15001),
                       explanation: 'Oversized response',
                       kind: 'correction',
                     },
@@ -335,9 +335,13 @@ describe('written conversation', () => {
   });
   it('rejects oversized learner messages and validates retry IDs', () => {
     expect(
-      writingMessageSchema.safeParse({ requestId: crypto.randomUUID(), text: 'a'.repeat(2001) })
+      writingMessageSchema.safeParse({ requestId: crypto.randomUUID(), text: 'a'.repeat(5001) })
         .success,
     ).toBe(false);
+    expect(
+      writingMessageSchema.safeParse({ requestId: crypto.randomUUID(), text: 'a'.repeat(5000) })
+        .success,
+    ).toBe(true);
     expect(
       writingMessageSchema.safeParse({ requestId: 'not-a-request-id', text: 'Hello' }).success,
     ).toBe(false);

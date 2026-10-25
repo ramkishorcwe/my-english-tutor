@@ -11,6 +11,10 @@ beforeAll(async () => {
     `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key);insert into auth.users values('${alice}'),('${bob}');grant usage on schema public to authenticated,anon;`,
   );
   await db.exec(readFileSync('supabase/migrations/003_writing_chat.sql', 'utf8'));
+  await db.exec(
+    "create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;",
+  );
+  await db.exec(readFileSync('supabase/migrations/004_dictionary_long_messages.sql', 'utf8'));
   await db.query('insert into writing_chats(id,user_id,topic) values($1,$2,$3)', [
     chat,
     alice,
@@ -35,6 +39,32 @@ async function complete(request: string, lease: string, text: string) {
   return r.rows[0].complete_writing_reply;
 }
 describe.sequential('private chat lifecycle and idempotency', () => {
+  it('accepts 5,000-character messages in the database and rejects 5,001', async () => {
+    const longerChat = crypto.randomUUID();
+    await db.query('insert into writing_chats(id,user_id,topic) values($1,$2,$3)', [
+      longerChat,
+      alice,
+      'Long writing practice',
+    ]);
+    await db.query(
+      "insert into writing_chat_turns(id,chat_id,role,text,sequence) values($1,$2,'model','Let us begin.',0)",
+      [crypto.randomUUID(), longerChat],
+    );
+    await expect(
+      db.query('select claim_writing_reply($1,$2,$3,$4)', [
+        alice,
+        longerChat,
+        crypto.randomUUID(),
+        'a'.repeat(5001),
+      ]),
+    ).rejects.toThrow('5000');
+    const result = await db.query<{ claim_writing_reply: { state: string } }>(
+      'select claim_writing_reply($1,$2,$3,$4)',
+      [alice, longerChat, crypto.randomUUID(), 'a'.repeat(5000)],
+    );
+    expect(result.rows[0].claim_writing_reply.state).toBe('claimed');
+    await db.query('delete from writing_chats where id=$1', [longerChat]);
+  });
   it('allows one tutor opening, and caches the same request without another message', async () => {
     const first = await claim(chat, null);
     expect(first.state).toBe('claimed');

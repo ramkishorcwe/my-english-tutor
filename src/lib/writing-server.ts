@@ -9,7 +9,7 @@ export function writingFailure(error: unknown) {
   if (error instanceof z.ZodError)
     return writingJson(
       {
-        error: 'Please check your topic and message. Messages can contain up to 2,000 characters.',
+        error: 'Please check your topic and message. Messages can contain up to 5,000 characters.',
       },
       400,
     );
@@ -49,10 +49,10 @@ export async function writingUser(
   return { user, admin, db };
 }
 export async function writingBody(request: Request) {
-  if (Number(request.headers.get('content-length') || 0) > 12000)
+  if (Number(request.headers.get('content-length') || 0) > 65536)
     throw new WritingError('Request is too large.', 413);
   const raw = await request.text();
-  if (raw.length > 12000) throw new WritingError('Request is too large.', 413);
+  if (raw.length > 65536) throw new WritingError('Request is too large.', 413);
   try {
     return JSON.parse(raw);
   } catch {

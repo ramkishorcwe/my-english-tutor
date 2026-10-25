@@ -1,5 +1,117 @@
 @import 'tailwindcss';
 
+.writing-translator {
+  margin-top: 24px;
+}
+.writing-translator > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--deep);
+}
+.translation-tool > p {
+  margin: 16px 0;
+  line-height: 1.8;
+  font-size: 13px;
+}
+.translation-tool textarea {
+  min-height: 85px;
+}
+.translation-actions {
+  display: flex;
+  gap: 20px;
+  align-items: end;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.translation-actions label {
+  flex: 1;
+  min-width: 160px;
+}
+.translation-result {
+  background: #eaf4ef;
+  padding: 20px;
+  margin-top: 20px;
+  border-radius: 12px;
+}
+.translation-result p,
+.dictionary-card p {
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dictionary-saved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--deep);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.dictionary-translation {
+  font-size: 20px;
+  margin: 12px 0 20px;
+}
+.translation-result h3,
+.dictionary-card h3 {
+  font-size: 12px;
+  margin: 16px 0 6px;
+}
+.translation-result .text-link {
+  margin-top: 18px;
+}
+.dictionary-lookup > h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dictionary-library {
+  margin-top: 36px;
+}
+.dictionary-search {
+  margin: 20px 0;
+}
+.dictionary-search > div {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+.dictionary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.dictionary-card-heading {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 20px;
+}
+.dictionary-card-heading h2 {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.dictionary-card-heading .icon-button {
+  flex-shrink: 0;
+}
+.writing-translate-button {
+  font-size: 11px;
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .dictionary-grid {
+    grid-template-columns: 1fr;
+  }
+  .translation-actions {
+    align-items: stretch;
+  }
+  .translation-actions button {
+    width: 100%;
+  }
+}
+
 .writing-entry {
   display: flex;
   align-items: center;

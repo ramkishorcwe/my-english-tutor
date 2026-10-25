@@ -55,6 +55,7 @@ import { LiveConversation } from './live-conversation';
 import { HotTopics } from './hot-topics';
 import { PracticeReminder } from './practice-reminder';
 import { WritingChatPage } from './writing-chat';
+import { PersonalDictionaryPage } from './personal-dictionary';
 import { disconnectReminderBrowser } from '@/lib/reminders';
 
 const icons: Record<string, LucideIcon> = {
@@ -71,6 +72,7 @@ const navigation = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/practice', label: 'Start practicing', icon: AudioLines },
   { href: '/chat', label: 'Writing chat', icon: MessagesSquare },
+  { href: '/dictionary', label: 'My dictionary', icon: BookOpen },
   { href: '/history', label: 'Conversations', icon: MessageCircle },
   { href: '/learn', label: 'My learning', icon: BookOpen },
   { href: '/progress', label: 'My progress', icon: TrendingUp },
@@ -341,8 +343,15 @@ export function SpeakBetter() {
                 <Dashboard data={data} demo={demo} name={name} />
               )}
               {pathname === '/practice' && <Practice data={data} onError={setError} />}
+              {pathname === '/dictionary' && (
+                <PersonalDictionaryPage key={data.user?.id || 'guest'} data={data} />
+              )}
               {(pathname === '/chat' || pathname.startsWith('/chat/')) && (
-                <WritingChatPage key={pathname} id={pathname.split('/')[2]} data={data} />
+                <WritingChatPage
+                  key={`${pathname}:${data.user?.id || 'guest'}`}
+                  id={pathname.split('/')[2]}
+                  data={data}
+                />
               )}
               {pathname.startsWith('/practice/') && (
                 <LiveConversation
@@ -370,6 +379,7 @@ export function SpeakBetter() {
                 '/dashboard',
                 '/practice',
                 '/chat',
+                '/dictionary',
                 '/history',
                 '/learn',
                 '/progress',

@@ -1,17 +1,19 @@
 import { z } from 'zod';
 import type { Turn } from './schema';
+export const WRITING_MESSAGE_LIMIT = 5000;
+export const WRITING_CORRECTED_LIMIT = 15000;
 export const writingMessageSchema = z.object({
   requestId: z.uuid(),
-  text: z.string().trim().min(1).max(2000).nullable(),
+  text: z.string().trim().min(1).max(WRITING_MESSAGE_LIMIT).nullable(),
 });
 export const writingFeedbackSchema = z.object({
   turnId: z.string(),
-  corrected: z.string().trim().min(1).max(6000),
+  corrected: z.string().trim().min(1).max(WRITING_CORRECTED_LIMIT),
   corrections: z
     .array(
       z.object({
-        original: z.string().min(1).max(2000),
-        corrected: z.string().min(1).max(6000),
+        original: z.string().min(1).max(WRITING_MESSAGE_LIMIT),
+        corrected: z.string().min(1).max(WRITING_CORRECTED_LIMIT),
         explanation: z.string().min(1).max(1500),
         kind: z.enum(['correction', 'optional']),
       }),

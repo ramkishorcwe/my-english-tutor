@@ -278,3 +278,28 @@ test('a message that did not reach the server survives refresh and retries with 
   await expect(page.locator('.writing-message.user')).toHaveCount(1);
   await expect(input).toHaveValue('Keep this next draft too.');
 });
+
+test('longer messages send successfully and a chat message can be opened in the translator', async ({
+  page,
+}) => {
+  const { thread } = await setup(page);
+  await page.goto(`/chat/${id}`);
+  const input = page.getByRole('textbox', { name: 'Your message', exact: true });
+  await expect(input).toBeEnabled();
+  await expect(input).toHaveAttribute('maxlength', '5000');
+  const text = 'I am practising written English for work. '.repeat(100);
+  expect(text.length).toBeGreaterThan(2000);
+  await input.fill(text);
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(
+    page.getByText('What was the best part of your day?', { exact: true }),
+  ).toBeVisible();
+  expect(thread.turns.find((t) => t.role === 'user')?.text).toBe(text.trim());
+  await page
+    .locator('.writing-message.user')
+    .getByRole('button', { name: 'Translate message', exact: true })
+    .click();
+  await expect(page.getByRole('textbox', { name: 'Word, phrase, or text' })).toHaveValue(
+    text.trim(),
+  );
+});

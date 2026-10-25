@@ -19,6 +19,7 @@ export const writingFeedbackSchema = z.object({
     .max(30),
 });
 export const writingReviewSchema = z.object({
+  summary: z.string().trim().min(1).max(1800).optional(),
   messages: z.array(writingFeedbackSchema).min(1).max(30),
 });
 export type WritingFeedback = z.infer<typeof writingFeedbackSchema>;

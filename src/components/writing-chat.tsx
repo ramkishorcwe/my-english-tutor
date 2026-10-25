@@ -6,6 +6,7 @@ import { ArrowRight, Check, MessagesSquare, Send, Sparkles } from 'lucide-react'
 import { api, type AppData } from '@/lib/data';
 import {
   writingHighlights,
+  writingMessageSchema,
   type WritingChat,
   type WritingReview,
   type WritingThread,
@@ -29,7 +30,10 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
   const attemptedOpening = useRef(false);
   const attemptedReview = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const inFlight = useRef(false);
   const draftKey = `speakbetter:writing:${data.user?.id}:${id}`;
+  const pendingKey = `${draftKey}:pending`;
   const load = useCallback(async () => {
     if (!id || !data.user) return;
     const result = await api<WritingThread>(`chats/${id}`);
@@ -40,10 +44,31 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
     mounted.current = true;
     if (data.user) {
       if (id) {
+        let savedRequest: { requestId: string; text: string | null } | null = null;
         try {
           setDraft(sessionStorage.getItem(draftKey) || '');
+          const saved = sessionStorage.getItem(pendingKey);
+          if (saved) {
+            const parsed = writingMessageSchema.safeParse(JSON.parse(saved));
+            if (parsed.success) savedRequest = parsed.data;
+          }
+          setRetryRequest(savedRequest);
         } catch {}
         void load()
+          .then((result) => {
+            if (!mounted.current || !result || !savedRequest) return;
+            if (
+              !result.pending &&
+              (savedRequest.text === null
+                ? result.turns.length > 0
+                : result.turns.some((t) => t.id === savedRequest.requestId))
+            ) {
+              setRetryRequest(null);
+              try {
+                sessionStorage.removeItem(pendingKey);
+              } catch {}
+            }
+          })
           .catch((e) => setError(e.message))
           .finally(() => setLoading(false));
       } else {
@@ -55,11 +80,11 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
     return () => {
       mounted.current = false;
     };
-  }, [id, data.user, load, draftKey]);
+  }, [id, data.user, load, draftKey, pendingKey]);
   useEffect(() => {
     if (thread?.chat.status === 'active')
       bottom.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [thread?.turns.length, busy, thread?.chat.status]);
+  }, [thread?.turns.length, busy, thread?.chat.status, retryRequest?.requestId]);
   async function create() {
     if (!data.user) {
       router.push('/signin');
@@ -79,17 +104,21 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
     }
   }
   async function message(request: { requestId: string; text: string | null }) {
-    if (!id || busy) return;
+    if (!id || busy || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setError('');
+    setRetryRequest(request);
+    try {
+      sessionStorage.setItem(pendingKey, JSON.stringify(request));
+    } catch {}
     try {
       const result = await api<WritingThread>(`chats/${id}/message`, 'POST', request);
       if (!mounted.current) return;
       setThread(result);
       setRetryRequest(null);
-      setDraft('');
       try {
-        sessionStorage.removeItem(draftKey);
+        sessionStorage.removeItem(pendingKey);
       } catch {}
     } catch (e) {
       if (!mounted.current) return;
@@ -98,10 +127,7 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
       try {
         const result = await load();
         if (!mounted.current) return;
-        if (result?.pending?.text) {
-          setDraft('');
-          sessionStorage.removeItem(draftKey);
-        } else if (
+        if (
           result &&
           !result.pending &&
           (request.text === null
@@ -109,15 +135,35 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
             : result.turns.some((t) => t.id === request.requestId))
         ) {
           setRetryRequest(null);
-          setDraft('');
-          sessionStorage.removeItem(draftKey);
+          sessionStorage.removeItem(pendingKey);
         }
       } catch {
-        /* Retain the draft if the server cannot confirm it was saved. */
+        /* The pending request stays visible and can be retried with the same ID. */
       }
     } finally {
+      inFlight.current = false;
       if (mounted.current) setBusy(false);
     }
+  }
+  function send() {
+    if (
+      !draft.trim() ||
+      busy ||
+      inFlight.current ||
+      thread?.pending ||
+      retryRequest ||
+      !thread?.turns.length ||
+      thread.chat.status !== 'active' ||
+      thread.turns.filter((t) => t.role === 'user').length >= 30
+    )
+      return;
+    const text = draft.trim();
+    setDraft('');
+    try {
+      sessionStorage.removeItem(draftKey);
+    } catch {}
+    void message({ requestId: crypto.randomUUID(), text });
+    composer.current?.focus({ preventScroll: true });
   }
   async function review() {
     if (!id) return;
@@ -140,16 +186,21 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
       thread?.chat.status === 'active' &&
       !thread.turns.length &&
       !thread.pending &&
+      !retryRequest &&
       !attemptedOpening.current
     ) {
       attemptedOpening.current = true;
       void message({ requestId: thread.chat.id, text: null });
     }
-    if (thread?.chat.status === 'ended' && !thread.chat.review && !attemptedReview.current) {
+    if (
+      thread?.chat.status === 'ended' &&
+      !thread.chat.review?.summary &&
+      !attemptedReview.current
+    ) {
       attemptedReview.current = true;
       void review();
     }
-  }, [thread]);
+  }, [thread, retryRequest]);
   async function end() {
     if (!id) return;
     setBusy(true);
@@ -163,8 +214,11 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
       if (mounted.current) setBusy(false);
     }
   }
-  const users = thread?.turns.filter((t) => t.role === 'user') || [];
   const pending = thread?.pending || retryRequest;
+  const unsavedMessage =
+    pending?.text && !thread?.turns.some((t) => t.id === pending.requestId) ? pending : null;
+  const users = thread?.turns.filter((t) => t.role === 'user') || [];
+  const userCount = users.length + (unsavedMessage ? 1 : 0);
   if (!data.user)
     return (
       <section className="panel writing-intro">
@@ -186,7 +240,10 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
           <div>
             <div className="eyebrow">A LITTLE ROOM FOR YOUR WORDS</div>
             <h1>Let’s get a conversation going.</h1>
-            <p>Your AI tutor starts. You bring your ideas. We’ll review your writing at the end.</p>
+            <p>
+              Choose the roles. Chat naturally. Get a summary and writing corrections when you
+              finish.
+            </p>
           </div>
         </div>
         {error && (
@@ -199,28 +256,49 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
             <span className="icon-box mint">
               <MessagesSquare size={24} />
             </span>
-            <h2>What shall we chat about?</h2>
+            <h2>Who would you like to practise with?</h2>
             <div className="writing-topics">
-              {['Surprise me', 'Everyday life', 'At work', 'Travel'].map((t) => (
+              {[
+                { label: 'Surprise me', context: 'Surprise me' },
+                {
+                  label: 'Job interview',
+                  context:
+                    'You are a hiring manager. I am a job candidate. Help me practise a realistic job interview.',
+                },
+                {
+                  label: 'Client meeting',
+                  context:
+                    'You are a client. I am a developer. We are discussing the requirements for your new website.',
+                },
+                {
+                  label: 'Friendly chat',
+                  context:
+                    'You are a friend. We are catching up about our everyday lives and weekend plans.',
+                },
+              ].map(({ label, context }) => (
                 <button
-                  key={t}
-                  className={`button secondary ${topic === t ? 'selected' : ''}`}
-                  aria-pressed={topic === t}
-                  onClick={() => setTopic(t)}
+                  key={label}
+                  className={`button secondary ${topic === context ? 'selected' : ''}`}
+                  aria-pressed={topic === context}
+                  onClick={() => setTopic(context)}
                 >
-                  {t}
+                  {label}
                 </button>
               ))}
             </div>
             <label>
-              A topic or situation (optional)
-              <input
+              Roles and situation (optional)
+              <textarea
                 value={topic}
                 maxLength={240}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="Let the tutor choose, or try ‘my first job’"
+                placeholder="For example: You are my manager. I want to practise asking for a promotion."
               />
             </label>
+            <p className="writing-note">
+              Say who the AI should play, who you are, and what you want to practise. You can also
+              change the situation during your chat.
+            </p>
             <button
               className="button primary"
               disabled={busy || topic.trim().length === 1}
@@ -287,18 +365,21 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
           <h1>
             {thread.chat.topic === 'Surprise me'
               ? 'A conversation to find your flow.'
-              : thread.chat.topic}
+              : 'Your conversation practice.'}
           </h1>
+          {thread.chat.topic !== 'Surprise me' && (
+            <p className="writing-situation">{thread.chat.topic}</p>
+          )}
           <p>
             {thread.chat.status === 'active'
-              ? `${users.length} of 30 messages · Corrections when you finish`
+              ? `${userCount} of 30 messages · Summary and corrections when you finish`
               : 'Chat saved · Your writing review'}
           </p>
         </div>
         {thread.chat.status === 'active' && (
           <button
             className="button secondary"
-            disabled={busy || !users.length}
+            disabled={busy || Boolean(pending) || !users.length}
             onClick={() => void end()}
           >
             End & review writing <Check size={16} />
@@ -313,7 +394,18 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
       {thread.chat.status === 'ended' && (
         <>
           {thread.chat.review ? (
-            <WritingReviewPanel review={thread.chat.review} thread={thread} />
+            <>
+              <WritingReviewPanel review={thread.chat.review} thread={thread} />
+              {!thread.chat.review.summary && (
+                <button
+                  className="button secondary"
+                  disabled={reviewing}
+                  onClick={() => void review()}
+                >
+                  {reviewing ? 'Summarising your conversation…' : 'Generate conversation summary'}
+                </button>
+              )}
+            </>
           ) : (
             <section className="panel writing-intro">
               <h2>Every message deserves a second look.</h2>
@@ -322,7 +414,9 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
                 phrasing.
               </p>
               <button className="button primary" disabled={reviewing} onClick={() => void review()}>
-                {reviewing ? 'Reviewing all your messages…' : 'Generate or retry writing review'}{' '}
+                {reviewing
+                  ? 'Preparing your summary and corrections…'
+                  : 'Generate or retry writing review'}{' '}
                 <Sparkles size={16} />
               </button>
               <p className="writing-note">
@@ -347,11 +441,30 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
             <div key={turn.id} className={`writing-message ${turn.role}`}>
               <span>{turn.role === 'user' ? 'YOU' : 'AI TUTOR'}</span>
               <p>{turn.text}</p>
+              {turn.role === 'user' && pending?.requestId === turn.id && (
+                <small className="writing-message-status">
+                  {busy ? 'Waiting for tutor…' : 'Tutor reply needs a retry'}
+                </small>
+              )}
             </div>
           ))}
+          {unsavedMessage && (
+            <div className="writing-message user">
+              <span>YOU</span>
+              <p>{unsavedMessage.text}</p>
+              <small className="writing-message-status">
+                {busy ? 'Sending…' : 'Send not confirmed · Retry below'}
+              </small>
+            </div>
+          )}
           {busy && (
             <p role="status" className="writing-thinking">
-              Your tutor is writing…
+              <span className="writing-typing-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+              Your tutor is typing…
             </p>
           )}
           <div ref={bottom} />
@@ -361,7 +474,8 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
             {pending && !busy && (
               <div className="writing-retry">
                 <p>
-                  The last request needs another try. Retrying won’t duplicate your saved message.
+                  The tutor’s reply needs another try. Your message is kept here; retrying won’t
+                  send it twice.
                 </p>
                 <button className="button secondary" onClick={() => void message(pending)}>
                   Retry tutor reply
@@ -380,17 +494,23 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
               className="writing-composer"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (draft.trim() && !busy && !pending)
-                  void message({ requestId: crypto.randomUUID(), text: draft.trim() });
+                send();
               }}
             >
               <label htmlFor="writing-message">Your message</label>
               <textarea
                 id="writing-message"
+                ref={composer}
                 value={draft}
                 maxLength={2000}
                 placeholder="Take your time. Write what you think…"
-                disabled={busy || Boolean(pending) || !thread.turns.length || users.length >= 30}
+                disabled={!thread.turns.length || userCount >= 30}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
                 onChange={(e) => {
                   setDraft(e.target.value);
                   try {
@@ -399,7 +519,7 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
                 }}
               />
               <div>
-                <span>{draft.length}/2,000 · Enter for a new line</span>
+                <span>{draft.length}/2,000 · Enter to send · Shift+Enter for a new line</span>
                 <button
                   className="button primary"
                   disabled={
@@ -407,7 +527,7 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
                     Boolean(pending) ||
                     !draft.trim() ||
                     !thread.turns.length ||
-                    users.length >= 30
+                    userCount >= 30
                   }
                   type="submit"
                 >
@@ -415,7 +535,7 @@ export function WritingChatPage({ id, data }: { id?: string; data: AppData }) {
                 </button>
               </div>
             </form>
-            {users.length >= 30 && (
+            {userCount >= 30 && (
               <p>
                 You’ve reached the end of this chat. Choose End & review writing for your feedback.
               </p>
@@ -442,6 +562,12 @@ function WritingReviewPanel({ review, thread }: { review: WritingReview; thread:
         <Sparkles size={15} /> YOUR WORDS, WITH A LITTLE MORE CLARITY
       </div>
       <h2 id="writing-review-heading">Your writing, reviewed.</h2>
+      {review.summary && (
+        <section className="writing-summary" aria-labelledby="writing-summary-heading">
+          <h3 id="writing-summary-heading">Conversation summary</h3>
+          <p>{review.summary}</p>
+        </section>
+      )}
       <p>
         {review.messages.length} {review.messages.length === 1 ? 'message' : 'messages'} reviewed ·{' '}
         {errors} suggested corrections. Highlighted text shows phrases to improve.

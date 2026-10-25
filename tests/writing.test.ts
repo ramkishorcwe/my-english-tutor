@@ -29,6 +29,15 @@ describe('written conversation', () => {
     const saved = new Map<string, unknown>();
     const generate = vi.fn().mockImplementation(async (parameters) => {
       const input = JSON.parse(parameters.contents);
+      // Reproduce the real provider's rejection of the bounded nested batch schema.
+      if (
+        Array.isArray(input) &&
+        input.length > 1 &&
+        /"(?:minLength|maxLength|minItems|maxItems)":/.test(
+          JSON.stringify(parameters.config.responseJsonSchema),
+        )
+      )
+        throw Object.assign(new Error('Request contains an invalid argument.'), { status: 400 });
       if (!Array.isArray(input))
         return {
           text: JSON.stringify({
@@ -97,16 +106,45 @@ describe('written conversation', () => {
         saved.set(key, value);
       },
     };
-    const generate = vi
-      .fn()
-      .mockResolvedValue({
-        text: JSON.stringify({ summary: 'You practised asking a shopkeeper for help.' }),
-      });
+    const generate = vi.fn().mockResolvedValue({
+      text: JSON.stringify({ summary: 'You practised asking a shopkeeper for help.' }),
+    });
     expect(await generateWritingSummary('Shopkeeper', turns, generate, cache)).toContain(
       'shopkeeper',
     );
     await generateWritingSummary('Shopkeeper', turns, generate, cache);
     expect(generate).toHaveBeenCalledTimes(1);
+  });
+  it('still rejects oversized corrections locally when the provider format omits length bounds', async () => {
+    const generate = vi.fn().mockImplementation(async (parameters) => {
+      const input = JSON.parse(parameters.contents);
+      return {
+        text: JSON.stringify(
+          Array.isArray(input)
+            ? {
+                messages: input.map((m: { id: string; text: string }) => ({
+                  turnId: m.id,
+                  corrected: 'x'.repeat(6001),
+                  corrections: [
+                    {
+                      original: m.text,
+                      corrected: 'x'.repeat(6001),
+                      explanation: 'Oversized response',
+                      kind: 'correction',
+                    },
+                  ],
+                })),
+              }
+            : { summary: 'You practised describing yesterday’s shopping.' },
+        ),
+      };
+    });
+    await expect(
+      generateWritingReview([turns[0]], generate, { get: async () => null, set: async () => {} }),
+    ).rejects.toThrow('could not be verified');
+    expect(generate.mock.calls.filter(([p]) => Array.isArray(JSON.parse(p.contents)))).toHaveLength(
+      2,
+    );
   });
   it('rejects malformed summaries and retains completed corrections for a retry', async () => {
     const saved = new Map<string, unknown>();

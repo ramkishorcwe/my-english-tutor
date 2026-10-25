@@ -443,8 +443,8 @@ function WritingReviewPanel({ review, thread }: { review: WritingReview; thread:
       </div>
       <h2 id="writing-review-heading">Your writing, reviewed.</h2>
       <p>
-        {review.messages.length} messages reviewed · {errors} suggested corrections. Highlighted
-        text shows phrases to improve.
+        {review.messages.length} {review.messages.length === 1 ? 'message' : 'messages'} reviewed ·{' '}
+        {errors} suggested corrections. Highlighted text shows phrases to improve.
       </p>
       {review.messages.map((feedback, index) => {
         const turn = thread.turns.find((t) => t.id === feedback.turnId);

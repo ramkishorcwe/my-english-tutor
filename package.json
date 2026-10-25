@@ -24,11 +24,11 @@
     "clsx": "^2.1.1",
     "fast-xml-parser": "^5.11.2",
     "lucide-react": "^1.53.0",
-    "next": "^16.4.0",
+    "next": "16.4.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "web-push": "^3.6.7",
-    "zod": "^4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

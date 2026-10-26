@@ -36,6 +36,10 @@ let audioContext: {
 };
 let resumeContext: ReturnType<typeof vi.fn>;
 let initialContextState: string;
+let capturePort: {
+  onmessage: null | ((event: { data: ArrayBuffer }) => void);
+  close: ReturnType<typeof vi.fn>;
+};
 const events = () => ({
   onState: vi.fn(),
   onTurn: vi.fn(),
@@ -84,6 +88,9 @@ beforeEach(() => {
     'AudioWorkletNode',
     class {
       port = { onmessage: null, close: vi.fn() };
+      constructor() {
+        capturePort = this.port;
+      }
       connect = vi.fn();
       disconnect = vi.fn();
     },
@@ -107,6 +114,27 @@ afterEach(() => {
 });
 
 describe('Voice provider lifecycle', () => {
+  it('keeps streaming hands-free audio across multiple coach replies without pressing the microphone again', async () => {
+    const provider = new GeminiVoiceProvider('session', false, [], events());
+    await provider.start();
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toEqual({
+      input_mode: 'hands-free',
+    });
+    capturePort.onmessage?.({ data: new ArrayBuffer(4) });
+    callbacks.onmessage({
+      serverContent: {
+        modelTurn: { parts: [{ inlineData: { data: 'AAAA', mimeType: 'audio/pcm;rate=24000' } }] },
+        turnComplete: true,
+      },
+    });
+    capturePort.onmessage?.({ data: new ArrayBuffer(4) });
+    callbacks.onmessage({ serverContent: { turnComplete: true } });
+    capturePort.onmessage?.({ data: new ArrayBuffer(4) });
+    expect(mock.send).toHaveBeenCalledTimes(3);
+    expect(track.enabled).toBe(true);
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledOnce();
+    await provider.stop();
+  });
   it('recovers suspended output without restarting the microphone or losing tutor audio', async () => {
     const cb = events();
     const provider = new GeminiVoiceProvider('session', false, [], cb);

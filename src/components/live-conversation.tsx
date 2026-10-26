@@ -166,8 +166,10 @@ export function LiveConversation({
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
   }, [session]);
-  async function start() {
+  async function start(inputMode = session?.input_mode) {
     if (!session) return;
+    const selectedMode = inputMode ?? 'hands-free';
+    setSession((previous) => (previous ? { ...previous, input_mode: selectedMode } : previous));
     setError('');
     setBusy(true);
     setMuted(false);
@@ -175,7 +177,7 @@ export function LiveConversation({
     await provider.current?.stop();
     const instance = new GeminiVoiceProvider(
       id,
-      session.input_mode === 'push-to-talk',
+      selectedMode === 'push-to-talk',
       turnsRef.current,
       {
         onState: (s) => {
@@ -228,7 +230,11 @@ export function LiveConversation({
   const labels: Record<VoiceState, string> = {
     idle: 'Your coach is ready when you are',
     connecting: 'Getting your coach ready…',
-    listening: push && !talking ? 'Take your time. Press to speak.' : 'Listening. Take your time.',
+    listening: muted
+      ? 'Your microphone is muted'
+      : push && !talking
+        ? 'Take your time. Press to speak.'
+        : 'Listening. Speak naturally.',
     thinking: 'Your coach is thinking…',
     speaking: 'Your AI coach is speaking',
     reconnecting: 'Reconnecting your conversation…',
@@ -299,15 +305,17 @@ export function LiveConversation({
           <div className="live-status" role="status" aria-live="polite">
             <h2>{labels[state]}</h2>
             <p>
-              {state === 'idle'
-                ? 'A patient partner. No perfect sentences required.'
-                : state === 'speaking'
-                  ? 'You can interrupt whenever a thought comes to you.'
-                  : state === 'reconnecting'
-                    ? 'Your captured words stay safe while we reconnect.'
-                    : push
-                      ? 'Hold the microphone button to talk. Release when you’re ready.'
-                      : 'Say what’s on your mind. Pauses are welcome here.'}
+              {connected && muted
+                ? 'Unmute once to continue your conversation.'
+                : state === 'idle'
+                  ? 'A patient partner. No perfect sentences required.'
+                  : state === 'speaking'
+                    ? 'You can interrupt whenever a thought comes to you.'
+                    : state === 'reconnecting'
+                      ? 'Your captured words stay safe while we reconnect.'
+                      : push
+                        ? 'Hold the microphone button to talk. Release when you’re ready.'
+                        : 'Your microphone stays on. Speak again whenever you’re ready.'}
             </p>
           </div>
           <div className="voice-controls">
@@ -367,7 +375,7 @@ export function LiveConversation({
               <button
                 className="mic-button"
                 disabled={busy || remaining === 0}
-                onClick={start}
+                onClick={() => void start()}
                 aria-label={state === 'error' ? 'Try microphone again' : 'Connect microphone'}
               >
                 {busy ? <span className="spinner" /> : <Mic size={30} />}
@@ -392,8 +400,24 @@ export function LiveConversation({
                   ? 'Hold to speak · Space works too'
                   : muted
                     ? 'Microphone muted'
-                    : 'Microphone on · Tap to mute'}
+                    : 'Hands-free · Mic stays on · Tap only to mute'}
           </span>
+          {push && (
+            <div className="hands-free-switch">
+              <p>
+                This session uses push-to-talk. Switch to keep your microphone on between turns.
+              </p>
+              <button
+                className="button primary"
+                disabled={busy || remaining === 0}
+                onClick={() => void start('hands-free')}
+              >
+                <Mic size={17} />
+                Use hands-free conversation
+              </button>
+              <p>Your conversation and captions will continue where you left off.</p>
+            </div>
+          )}
           {playbackBlocked && (
             <div className="sound-recovery" role="status">
               <p>Your browser paused tutor audio. Enable sound to hear your coach.</p>

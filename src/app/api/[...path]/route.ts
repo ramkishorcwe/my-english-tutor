@@ -152,6 +152,10 @@ async function handler(request: NextRequest, context: { params: Promise<{ path: 
             })),
           ).slice(0, 5000);
         }
+        const { input_mode: requestedInputMode } = z
+          .object({ input_mode: z.enum(['hands-free', 'push-to-talk']).optional() })
+          .parse(body);
+        const inputMode = requestedInputMode ?? session.input_mode;
         const config = {
           responseModalities: [Modality.AUDIO],
           inputAudioTranscription: {},
@@ -162,7 +166,7 @@ async function handler(request: NextRequest, context: { params: Promise<{ path: 
           contextWindowCompression: { slidingWindow: {} },
           realtimeInputConfig: {
             automaticActivityDetection:
-              session.input_mode === 'push-to-talk'
+              inputMode === 'push-to-talk'
                 ? { disabled: true }
                 : {
                     disabled: false,
@@ -186,6 +190,20 @@ async function handler(request: NextRequest, context: { params: Promise<{ path: 
             liveConnectConstraints: { model, config },
           },
         });
+        if (inputMode !== session.input_mode) {
+          const updated = checked(
+            await admin
+              .from('sessions')
+              .update({ input_mode: inputMode })
+              .eq('id', id)
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .select('id')
+              .maybeSingle(),
+          );
+          if (!updated)
+            throw new HttpError('This conversation has ended. Start a new practice session.', 409);
+        }
         return json({
           token: token.name,
           model,

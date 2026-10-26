@@ -146,3 +146,109 @@ test('paused tutor audio can be restored and replayed without reconnecting', asy
   await expect(page.getByRole('button', { name: 'Mute microphone', exact: true })).toBeEnabled();
   expect(connections).toBe(1);
 });
+
+test('an existing push-to-talk conversation switches to hands-free and keeps streaming across replies', async ({
+  page,
+}, info) => {
+  const session = { ...makeSession(), input_mode: 'push-to-talk' };
+  const existing = {
+    id: turnId,
+    role: 'user',
+    text: 'I want to keep talking naturally.',
+    sequence: 0,
+  };
+  await page.route(`**/api/sessions/${id}`, (route) =>
+    route.fulfill({ json: { session, turns: [existing] } }),
+  );
+  const requestedModes: string[] = [];
+  await page.route(`**/api/sessions/${id}/token`, (route) => {
+    const mode = route.request().postDataJSON().input_mode;
+    requestedModes.push(mode);
+    session.input_mode = mode;
+    return route.fulfill({
+      json: {
+        token: 'auth_tokens/voice-test',
+        model: 'test-model',
+        config: {
+          responseModalities: ['AUDIO'],
+          realtimeInputConfig: {
+            automaticActivityDetection: { disabled: mode === 'push-to-talk' },
+          },
+        },
+        expiresAt: new Date(Date.now() + 600000).toISOString(),
+      },
+    });
+  });
+  await page.route(`**/api/sessions/${id}/turns`, (route) => route.fulfill({ json: { ok: true } }));
+  let frames = 0,
+    replies = 0;
+  await page.routeWebSocket('wss://generativelanguage.googleapis.com/**', (socket) => {
+    function reply() {
+      replies++;
+      socket.send(
+        JSON.stringify({
+          serverContent: {
+            outputTranscription: { text: `Coach reply ${replies}`, finished: true },
+            modelTurn: {
+              parts: [
+                { inlineData: { data: 'AAAA'.repeat(800), mimeType: 'audio/pcm;rate=24000' } },
+              ],
+            },
+            turnComplete: true,
+          },
+        }),
+      );
+    }
+    socket.onMessage((raw) => {
+      const message = JSON.parse(String(raw));
+      if (message.setup) socket.send(JSON.stringify({ setupComplete: {} }));
+      if (message.clientContent?.turnComplete) reply();
+      if (message.realtimeInput?.audio || message.realtimeInput?.mediaChunks?.length) {
+        frames++;
+        if (frames % 5 === 0 && replies < 5) reply();
+      }
+    });
+  });
+  await page.addInitScript(() => {
+    const Base = window.AudioContext;
+    Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+      value: async () => {
+        const audio = new Base();
+        const oscillator = audio.createOscillator();
+        const destination = audio.createMediaStreamDestination();
+        oscillator.frequency.value = 220;
+        oscillator.connect(destination);
+        oscillator.start();
+        return destination.stream;
+      },
+    });
+  });
+  await page.goto(`/practice/${id}`);
+  await page.getByRole('button', { name: 'Connect microphone', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Hold to speak', exact: true })).toBeVisible();
+  expect(requestedModes).toEqual(['push-to-talk']);
+  expect(frames).toBe(0);
+  await page.getByRole('button', { name: 'Use hands-free conversation', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Mute microphone', exact: true })).toBeVisible();
+  await expect.poll(() => frames).toBeGreaterThan(15);
+  expect(replies).toBeGreaterThanOrEqual(3);
+  expect(requestedModes).toEqual(['push-to-talk', 'hands-free']);
+  await expect(page.getByText(existing.text, { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Hands-free · Mic stays on · Tap only to mute', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Mute microphone', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Unmute microphone', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Unmute microphone', exact: true }).click();
+  const resumed = frames;
+  await expect.poll(() => frames).toBeGreaterThan(resumed + 5);
+  await page.screenshot({
+    path: `test-results/hands-free-${info.project.name}.png`,
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Use hands-free conversation', exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator('.live-top')).toContainText('Hands-free');
+});

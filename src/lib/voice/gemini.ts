@@ -111,7 +111,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
       };
       const response = await fetch(`/api/sessions/${this.id}/token`, {
         method: 'POST',
-        body: '{}',
+        body: JSON.stringify({ input_mode: this.pushToTalk ? 'push-to-talk' : 'hands-free' }),
         headers: { 'Content-Type': 'application/json' },
       });
       const data = await response.json();

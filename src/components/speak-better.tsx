@@ -760,10 +760,14 @@ function Practice({ data, onError }: { data: AppData; onError: (s: string) => vo
           <label>
             How would you like to speak?
             <select value={inputMode} onChange={(e) => setInputMode(e.target.value)}>
-              <option value="hands-free">Hands-free · Natural conversation</option>
-              <option value="push-to-talk">Push-to-talk · Take your time</option>
+              <option value="hands-free">Hands-free · Mic stays on (recommended)</option>
+              <option value="push-to-talk">Push-to-talk · Hold the button for each turn</option>
             </select>
           </label>
+          <p className="writing-note">
+            Hands-free lets you start the microphone once and talk naturally. The coach detects when
+            you finish and listens again after replying.
+          </p>
           <div className="privacy-note">
             <ShieldCheck size={18} />
             <p>

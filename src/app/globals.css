@@ -1,5 +1,22 @@
 @import 'tailwindcss';
 
+.hands-free-switch {
+  margin: 20px auto 0;
+  max-width: 440px;
+  padding: 18px;
+  background: #edf5ef;
+  border: 1px solid #d8e8dd;
+  border-radius: 14px;
+}
+.hands-free-switch p {
+  color: #355a4c;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.hands-free-switch .button {
+  margin: 12px 0;
+}
+
 .writing-translator {
   margin-top: 24px;
 }

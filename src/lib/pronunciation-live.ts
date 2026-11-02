@@ -119,8 +119,13 @@ export function livePronunciationGeneration(
           );
         }
       })
-      .catch(() =>
-        finish(new WritingError('The pronunciation coach could not connect. Please try again.')),
-      );
+      .catch((error: unknown) => {
+        logConnectionFailure(
+          'connect',
+          undefined,
+          error instanceof Error ? error.message : 'unknown',
+        );
+        finish(new WritingError('The pronunciation coach could not connect. Please try again.'));
+      });
   });
 }

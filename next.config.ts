@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
+  // Keep the SDK's native Node WebSocket transport intact in route handlers.
+  serverExternalPackages: ['@google/genai'],
   async headers() {
     return [
       {

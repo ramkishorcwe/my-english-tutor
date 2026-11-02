@@ -4,7 +4,7 @@ A responsive English speaking practice app built with Next.js 16, TypeScript, Ta
 
 ## Run locally
 
-Use **Node.js 22 or newer** (Node 24 is recommended). The current Supabase SDK requires it.
+Use **Node.js 24**, matching the production runtime pinned in `package.json`.
 
 ```sh
 npm ci
@@ -65,6 +65,8 @@ Sessions last 3–20 minutes, with a 60-minute daily allocation per user (UTC da
 Past learning memory consists of recent report priorities and saved vocabulary. Users can disable it in Settings; deleting a session removes its learning context as well as its report, exercises, and vocabulary. Account deletion cascades all database records. Metrics and history currently summarize the latest 100 sessions/items. Practice time means elapsed session time, not measured learner speech time.
 
 ## Checks
+
+`/vocabulary` is a public, curated starter collection of 180 everyday English words and phrases in 15 categories. Each entry includes a simple meaning, an original example sentence, and browser speech playback for both. Category browsing, cross-category search, and incremental loading work without an account, API key, or database migration. This collection is separate from each learner’s private saved dictionary. Browser checks are in `tests/e2e/vocabulary.spec.ts`.
 
 ```sh
 npm run typecheck

@@ -1,5 +1,222 @@
 @import 'tailwindcss';
 
+.everyday-browse-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+.everyday-browse-heading > svg {
+  color: #246c5b;
+  flex-shrink: 0;
+}
+.everyday-browse-heading h2 {
+  font-size: 20px;
+}
+.everyday-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.everyday-categories > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  text-align: left;
+  padding: 10px 14px;
+  border: 1px solid #dce4df;
+  border-radius: 12px;
+  background: #fff;
+  color: #465b52;
+  font-size: 13px;
+  cursor: pointer;
+}
+.everyday-categories > button:hover {
+  background: #f1f7f3;
+}
+.everyday-categories > button[aria-pressed='true'] {
+  background: #e0f1e8;
+  border-color: #6eaa91;
+  color: #205a46;
+  font-weight: 600;
+}
+.everyday-categories > button > span {
+  font-size: 11px;
+  color: #536b60;
+}
+.everyday-search {
+  display: block;
+  margin-top: 24px;
+}
+.everyday-search > span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.everyday-search > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #cddbd2;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #fff;
+}
+.everyday-search > div:focus-within {
+  outline: 2px solid #46806a;
+  outline-offset: 2px;
+}
+.everyday-search input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 0;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+}
+.everyday-search input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.everyday-search .icon-button {
+  flex-shrink: 0;
+}
+.everyday-library {
+  margin-top: 30px;
+}
+.everyday-results-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.everyday-results-heading h2 {
+  font-size: 23px;
+}
+.everyday-results-heading p {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #596d63;
+}
+.everyday-results-heading > p {
+  flex-shrink: 0;
+}
+.everyday-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.everyday-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 23px;
+}
+.everyday-category-label {
+  color: #42715e;
+  font-size: 11px;
+  font-weight: 600;
+}
+.everyday-card h3 {
+  margin: 10px 0;
+  font-size: 25px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.everyday-meaning {
+  color: #4f6359;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.everyday-card blockquote {
+  margin: 18px 0 22px;
+  padding: 12px 14px;
+  background: #f3f7f3;
+  border-left: 2px solid #a0c5af;
+  border-radius: 0 8px 8px 0;
+  color: #3a5548;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.everyday-audio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+.everyday-audio .button {
+  min-height: 40px;
+  padding: 9px 11px;
+  font-size: 12px;
+}
+.everyday-more {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+.everyday-more p {
+  color: #596d63;
+  font-size: 13px;
+}
+.everyday-empty {
+  text-align: center;
+  padding: 40px 24px;
+}
+.everyday-empty > svg {
+  margin: 0 auto 16px;
+  color: #42715e;
+}
+.everyday-empty h3 {
+  font-size: 21px;
+}
+.everyday-empty p {
+  margin: 12px auto 22px;
+  max-width: 440px;
+  color: #596d63;
+  line-height: 1.7;
+}
+@media (max-width: 1150px) {
+  .everyday-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .everyday-browse {
+    padding: 20px;
+  }
+  .everyday-browse-heading h2 {
+    font-size: 18px;
+  }
+  .everyday-categories {
+    gap: 8px;
+  }
+  .everyday-categories > button {
+    font-size: 12px;
+    padding: 9px 11px;
+  }
+  .everyday-grid {
+    grid-template-columns: 1fr;
+  }
+  .everyday-results-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .everyday-card {
+    padding: 22px;
+  }
+  .everyday-audio .button {
+    min-height: 44px;
+  }
+}
+
 .pronunciation-modes,
 .pronunciation-model,
 .pronunciation-listen-controls {

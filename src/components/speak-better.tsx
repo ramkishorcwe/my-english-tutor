@@ -58,6 +58,7 @@ import { PracticeReminder } from './practice-reminder';
 import { WritingChatPage } from './writing-chat';
 import { PersonalDictionaryPage } from './personal-dictionary';
 import { PronunciationPage } from './pronunciation';
+import { EverydayVocabularyPage } from './everyday-vocabulary';
 import { disconnectReminderBrowser } from '@/lib/reminders';
 
 const icons: Record<string, LucideIcon> = {
@@ -76,6 +77,7 @@ const navigation = [
   { href: '/chat', label: 'Writing chat', icon: MessagesSquare },
   { href: '/dictionary', label: 'My dictionary', icon: BookOpen },
   { href: '/pronunciation', label: 'Pronunciation', icon: Volume2 },
+  { href: '/vocabulary', label: 'Vocabulary', icon: GraduationCap },
   { href: '/history', label: 'Conversations', icon: MessageCircle },
   { href: '/learn', label: 'My learning', icon: BookOpen },
   { href: '/progress', label: 'My progress', icon: TrendingUp },
@@ -346,6 +348,7 @@ export function SpeakBetter() {
                 <Dashboard data={data} demo={demo} name={name} />
               )}
               {pathname === '/practice' && <Practice data={data} onError={setError} />}
+              {pathname === '/vocabulary' && <EverydayVocabularyPage />}
               {pathname === '/pronunciation' && (
                 <PronunciationPage key={data.user?.id || 'guest'} data={data} />
               )}
@@ -387,6 +390,7 @@ export function SpeakBetter() {
                 '/chat',
                 '/dictionary',
                 '/pronunciation',
+                '/vocabulary',
                 '/history',
                 '/learn',
                 '/progress',

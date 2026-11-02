@@ -8,6 +8,20 @@ import {
 import { inspectPronunciationWav } from './pronunciation-audio';
 import { WritingError } from './writing-ai';
 
+function logConnectionFailure(stage: string, code?: number, reason = '') {
+  // Record transport diagnostics without keys, audio, target words, or transcripts.
+  const safeReason = reason
+    .replace(/(?:https?|wss?):\/\/\S+/g, '[url]')
+    .replace(/[A-Za-z0-9_+/=-]{40,}/g, '[redacted]')
+    .slice(0, 240);
+  console.warn('pronunciation_audio_connection', {
+    stage,
+    code,
+    reason: safeReason,
+    runtime: process.version,
+  });
+}
+
 /** One short audio-only session. Only a validated report tool result is returned to the learner. */
 export function livePronunciationGeneration(
   ai: Pick<GoogleGenAI, 'live'>,
@@ -68,18 +82,23 @@ export function livePronunciationGeneration(
                 break;
               }
           },
-          onerror: () =>
+          onerror: () => {
+            logConnectionFailure('error');
             finish(
               new WritingError(
                 'The pronunciation audio connection failed. Please try the same word again.',
               ),
-            ),
-          onclose: () =>
+            );
+          },
+          onclose: (event) => {
+            if (settled) return;
+            logConnectionFailure('closed', event.code, event.reason);
             finish(
               new WritingError(
                 'The pronunciation audio connection closed. Please try the same word again.',
               ),
-            ),
+            );
+          },
         },
       })
       .then((opened) => {

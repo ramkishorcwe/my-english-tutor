@@ -48,6 +48,8 @@ The app deliberately allows a 1.6-second silence window with low end-of-speech s
 
 **Translation and personal dictionary** are available at `/dictionary` and inside writing chats. Translate words, phrases, or messages into your profile language or another supported language. Each successful lookup saves its translation, English meaning, and usage example privately to your account; repeated searches reuse the entry for that language. Apply `supabase/migrations/004_dictionary_long_messages.sql` after migration 003. This also raises learner messages to 5,000 characters and adjusts review batching for longer messages.
 
+**Pronunciation studio** at `/pronunciation` reads English words or pasted text using the device’s speech voice, with normal and slow playback. Dictionary entries include listen buttons. A separate 24-word challenge records short microphone attempts, sends normalized 16 kHz WAV audio to Gemini, and advances automatically only after a confident, intelligible attempt at the displayed word. Incorrect or uncertain attempts stay on the same word and trigger a slow demonstration. Microphone tracks stop before assessment; recordings are not saved by the app. Practice progress is scoped to the signed-in user in this browser’s local storage. AI feedback is informal and accepts understandable accent variation. No additional database migration is required.
+
 - `src/lib/voice/provider.ts`: provider-independent voice contract.
 - `src/lib/voice/gemini.ts`: Gemini connection, captions, resumption, voice controls, and resource cleanup.
 - `public/pcm-worklet.js`, `src/lib/voice/audio.ts`: microphone conversion and scheduled playback. Interruptions stop and disconnect every queued source immediately.

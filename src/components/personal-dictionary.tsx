@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, BookOpen, Check, Languages, Search, Trash2 } from 'lucide-react';
 import { api, type AppData } from '@/lib/data';
+import { SpeakButton } from './pronunciation';
 import {
   dictionaryLanguages,
   preferredDictionaryLanguage,
@@ -135,10 +136,18 @@ function TranslationContent({ entry }: { entry: DictionaryEntry }) {
       <p className="dictionary-translation" dir="auto">
         {entry.translation}
       </p>
+      {entry.source_language.toLowerCase().startsWith('english') && (
+        <SpeakButton text={entry.term} label="Hear this word or phrase" />
+      )}
+      {entry.target_language === 'English' &&
+        !entry.source_language.toLowerCase().startsWith('english') && (
+          <SpeakButton text={entry.translation} label="Hear the English translation" />
+        )}
       <h3>Meaning in English</h3>
       <p>{entry.meaning}</p>
       <h3>English example</h3>
       <p>{entry.example}</p>
+      <SpeakButton text={entry.example} label="Hear the English example" />
     </>
   );
 }

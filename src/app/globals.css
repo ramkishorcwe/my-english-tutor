@@ -1,5 +1,135 @@
 @import 'tailwindcss';
 
+.pronunciation-modes,
+.pronunciation-model,
+.pronunciation-listen-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.pronunciation-modes {
+  margin-bottom: 24px;
+}
+.pronunciation-listen,
+.pronunciation-challenge {
+  max-width: 900px;
+}
+.pronunciation-listen > p {
+  margin: 14px 0 24px;
+  line-height: 1.8;
+  color: var(--text);
+}
+.pronunciation-listen textarea {
+  min-height: 180px;
+}
+.pronunciation-listen-controls {
+  justify-content: space-between;
+  margin: 18px 0;
+  font-size: 12px;
+  color: var(--text);
+}
+.pronunciation-listen-controls .pronunciation-slow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+}
+.pronunciation-slow input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--deep);
+}
+.pronunciation-challenge {
+  text-align: center;
+}
+.pronunciation-progress {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+.pronunciation-challenge progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin: 16px 0 32px;
+  accent-color: var(--deep);
+}
+.pronunciation-word {
+  font-size: clamp(30px, 6vw, 62px);
+  letter-spacing: -1.5px;
+  overflow-wrap: anywhere;
+}
+.pronunciation-meaning {
+  margin: 16px 0 28px;
+  line-height: 1.8;
+  color: var(--text);
+}
+.pronunciation-model {
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.pronunciation-record {
+  margin: 8px auto;
+}
+.pronunciation-record.recording {
+  background: #9a3d32;
+}
+.pronunciation-state {
+  margin: 14px auto 24px;
+  line-height: 1.8;
+  font-size: 13px;
+  max-width: 560px;
+}
+.pronunciation-feedback {
+  text-align: left;
+  background: #fff4df;
+  border: 1px solid #e8d8b8;
+  padding: 22px;
+  border-radius: 14px;
+  margin: 20px 0;
+}
+.pronunciation-feedback.clear {
+  background: #eaf4ef;
+  border-color: #d3e7dc;
+}
+.pronunciation-feedback p {
+  margin-top: 12px;
+  line-height: 1.8;
+}
+.pronunciation-complete > * + * {
+  margin-top: 20px;
+}
+.pronunciation-complete > svg {
+  color: var(--deep);
+  margin: auto;
+}
+.pronunciation-signin p {
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+.speak-control {
+  margin-top: 12px;
+}
+.speak-control .button {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+@media (max-width: 760px) {
+  .pronunciation-modes .button {
+    flex: 1;
+    justify-content: center;
+  }
+  .pronunciation-model .button,
+  .pronunciation-record {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .hands-free-switch {
   margin: 20px auto 0;
   max-width: 440px;
